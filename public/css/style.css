@@ -57,11 +57,10 @@ body.body-medico {
 }
 
 body.body-admin {
-  height: 100vh;
-  overflow: hidden;
+  min-height: 100vh;
 }
 
-body.body-admin .container {
+body.body-admin .container.container-lista {
   height: calc(100vh - 52px);
   margin-top: 0;
   margin-bottom: 0;
@@ -72,15 +71,23 @@ body.body-admin .container {
   overflow: hidden;
 }
 
-body.body-admin .page-header,
-body.body-admin .filtros-card {
+body.body-admin .container.container-form {
+  height: auto;
+  overflow: visible;
+  max-width: 920px;
+  padding-bottom: 40px;
+}
+
+body.body-admin .container-lista .page-header,
+body.body-admin .container-lista .filtros-card {
   flex-shrink: 0;
 }
 
 .tabela-scroll {
   flex: 1 1 auto;
   min-height: 0;
-  overflow: auto;
+  overflow-x: hidden;
+  overflow-y: auto;
   border-radius: 12px;
   box-shadow: var(--shadow);
   background: var(--surface);
@@ -89,6 +96,8 @@ body.body-admin .filtros-card {
 .tabela-scroll .tabela {
   box-shadow: none;
   border-radius: 0;
+  width: 100%;
+  table-layout: fixed;
 }
 
 .tabela-scroll thead th {
@@ -96,6 +105,111 @@ body.body-admin .filtros-card {
   top: 0;
   background: #f3f7f5;
   z-index: 1;
+}
+
+.tabela-plantoes th,
+.tabela-plantoes td {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  vertical-align: middle;
+}
+
+.tabela-plantoes .col-id { width: 56px; }
+.tabela-plantoes .col-data { width: 88px; }
+.tabela-plantoes .col-horario { width: 110px; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tabela-plantoes .col-conclusao { width: 150px; }
+.tabela-plantoes .col-acoes { width: 168px; white-space: nowrap; }
+
+.cell-nome {
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.acoes-btns {
+  display: inline-flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.btn-acao {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+  border: 1px solid transparent;
+  cursor: pointer;
+  font-family: inherit;
+  line-height: 1;
+}
+
+.btn-editar {
+  color: #1d4ed8;
+  background: #eff6ff;
+  border-color: #bfdbfe;
+}
+
+.btn-editar:hover { background: #dbeafe; }
+
+.btn-cancelar {
+  color: #b91c1c;
+  background: #fef2f2;
+  border-color: #fecaca;
+}
+
+.btn-cancelar:hover { background: #fee2e2; }
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.3;
+  border: 1px solid transparent;
+  white-space: normal;
+}
+
+.tag-registrado {
+  color: #166534;
+  background: #dcfce7;
+  border-color: #86efac;
+}
+
+.tag-justificado {
+  color: #115e59;
+  background: #ccfbf1;
+  border-color: #5eead4;
+}
+
+.tag-pendente_entrada {
+  color: #1e40af;
+  background: #dbeafe;
+  border-color: #93c5fd;
+}
+
+.tag-pendente_saida {
+  color: #9a3412;
+  background: #ffedd5;
+  border-color: #fdba74;
+}
+
+.tag-pendente_justificativa {
+  color: #9f1239;
+  background: #ffe4e6;
+  border-color: #fda4af;
+}
+
+.tag-cancelado {
+  color: #374151;
+  background: #f3f4f6;
+  border-color: #d1d5db;
 }
 
 .container-medico {
@@ -230,17 +344,26 @@ h1, h2 {
 .badge-pendente_entrada { background: #2563eb; }
 .badge-pendente_saida { background: #d97706; }
 
-.form-page { max-width: 760px; }
+.form-page {
+  width: 100%;
+  max-width: 880px;
+  margin: 0 auto;
+}
 
 .form-escala {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px 12px;
-  max-width: 760px;
+  width: 100%;
+  max-width: none;
   background: rgba(255, 255, 255, 0.92);
   border: 1px solid var(--line);
   border-radius: 16px;
   padding: 16px;
   box-shadow: var(--shadow);
+}
+
+.form-grid.form-escala {
+  max-width: none;
 }
 
 .form-escala .span-2 { grid-column: span 2; }
@@ -706,12 +829,19 @@ h1, h2 {
   .tabela { display: block; overflow-x: auto; }
   .page-header { align-items: flex-start; }
   body.body-admin { height: auto; overflow: auto; }
-  body.body-admin .container {
+  body.body-admin .container.container-lista {
     height: auto;
     overflow: visible;
   }
   .tabela-scroll {
     max-height: 65vh;
+    overflow-x: hidden;
+  }
+  .tabela-plantoes .col-acoes { width: 120px; }
+  .btn-acao span,
+  .btn-acao {
+    font-size: 11px;
+    padding: 5px 8px;
   }
   .medico-tabs-3 {
     grid-template-columns: 1fr;

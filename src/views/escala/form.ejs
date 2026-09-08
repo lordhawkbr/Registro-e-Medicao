@@ -14,9 +14,6 @@
     const crmAtual = plantao ? (plantao.CRM_ESCALADO || plantao.crmEscalado || "") : "";
     const ufAtual = plantao ? (plantao.ufCrm || "") : "";
     const especialidadeAtual = plantao ? (plantao.IDESPECIALIDADE || plantao.idEspecialidade || plantao.especialidade || "") : "";
-    const empresaVal = plantao
-      ? (plantao.EMPRESA || plantao.empresa || plantao.CODFILIAL || plantao.codFilial || "")
-      : "";
   %>
 
   <form id="formEscala" method="post"
@@ -27,7 +24,6 @@
     <input type="hidden" name="especialidade" id="inpEspecialidade" value="<%= especialidadeAtual %>">
     <input type="hidden" name="crmEscalado" id="inpCrmEscalado" required value="<%= crmAtual %>">
     <input type="hidden" name="ufCrm" id="inpUfCrm" value="<%= ufAtual %>">
-    <input type="hidden" name="empresa" id="idEmpresa" required value="<%= empresaVal %>">
 
     <label>
       Filial
@@ -96,7 +92,6 @@
 
 <script>
   const selFilial = document.getElementById("selFilial");
-  const idEmpresa = document.getElementById("idEmpresa");
   const selSetor = document.getElementById("selSetor");
   const selTipoPlantao = document.getElementById("selTipoPlantao");
   const selMedico = document.getElementById("selMedico");
@@ -105,10 +100,6 @@
   const inpCrmEscalado = document.getElementById("inpCrmEscalado");
   const inpUfCrm = document.getElementById("inpUfCrm");
   const CRM_ATUAL = "<%= crmAtual %>";
-
-  function sincronizarEmpresa() {
-    idEmpresa.value = selFilial.value || "";
-  }
 
   async function carregarSetores(codFilial, setorSelecionadoAtual) {
     selSetor.innerHTML = '<option value="">Carregando...</option>';
@@ -188,7 +179,6 @@
   }
 
   selFilial.addEventListener("change", () => {
-    sincronizarEmpresa();
     carregarSetores(selFilial.value, null);
     selTipoPlantao.innerHTML = '<option value="">Selecione setor</option>';
     selMedico.innerHTML = '<option value="">Selecione tipo de plantão</option>';
@@ -220,7 +210,6 @@
   const especialidadeInicial = "<%= especialidadeAtual %>";
 
   (async function initEdicao() {
-    sincronizarEmpresa();
     if (!filialInicial) return;
     await carregarSetores(filialInicial, setorInicial);
     await carregarTiposPlantao(filialInicial, setorInicial, tipoInicial);

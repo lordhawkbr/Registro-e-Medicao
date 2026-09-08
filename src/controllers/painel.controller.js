@@ -82,7 +82,7 @@ async function index(req, res, next) {
     );
 
     const plantoesAbertos = plantoesComRegistros
-      .filter(({ plantao }) => plantao.STATUS === "ABERTO" || plantao.STATUS === "EM_ANDAMENTO")
+      .filter(({ plantao }) => plantao.STATUS === "EM_ANDAMENTO")
       .sort((a, b) => {
         const da = a.plantao.DATA_CHAVE || "";
         const db = b.plantao.DATA_CHAVE || "";

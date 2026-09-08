@@ -20,7 +20,7 @@
       </nav>
     </header>
   <% } %>
-  <main class="container <%= isMedico ? 'container-medico' : '' %>">
+  <main class="container <%= isMedico ? 'container-medico' : '' %> <%= typeof containerClass !== 'undefined' ? containerClass : '' %>">
     <%- body %>
   </main>
 </body>

@@ -46,6 +46,7 @@ function normalizarPlantao(row) {
     HORAINICIO_INPUT: formatarHoraInput(row.HORAINICIO),
     HORAFIM_INPUT: formatarHoraInput(row.HORAFIM),
     HORARIO_FORMATADO: formatarPeriodoPlantao(row.DATA, row.HORAINICIO, row.HORAFIM),
+    HORARIO_CURTO: `${formatarHoraCurta(row.HORAINICIO)} – ${formatarHoraCurta(row.HORAFIM)}`,
     FILIAL_NOME: limparNomeFilial(row.FILIAL_NOME_RAW) || String(row.CODFILIAL),
     SETOR_NOME: row.SETOR_NOME || row.CODCCUSTO,
     TIPO_NOME: row.TIPO_DESCRICAO
@@ -105,11 +106,13 @@ async function criar(dados, usuario) {
 
   const pool = await getPool();
   const dataExpiracao = calcularDataExpiracao(dados.data, dados.horaFim);
-  const empresa = resolverEmpresa(dados);
+  const codFilial = parseInt(dados.codFilial, 10);
+  if (!Number.isFinite(codFilial)) {
+    throw new Error("Filial inválida para gravação do plantão.");
+  }
 
   const result = await pool.request()
-    .input("codFilial", sql.Int, dados.codFilial)
-    .input("empresa", sql.Int, empresa)
+    .input("codFilial", sql.Int, codFilial)
     .input("codCCusto", sql.VarChar, dados.codCCusto)
     .input("data", sql.Date, dados.data)
     .input("horaInicio", sql.VarChar, dados.horaInicio)
@@ -125,7 +128,7 @@ async function criar(dados, usuario) {
          IDESPECIALIDADE, CODTIPOPLANTAO, CRM_ESCALADO, STATUS, DATAEXPIRACAO, RECCREATEDBY)
       OUTPUT INSERTED.IDPLANTAO
       VALUES
-        (@codFilial, @empresa, @codCCusto, @data, @horaInicio, @horaFim,
+        (@codFilial, @codFilial, @codCCusto, @data, @horaInicio, @horaFim,
          @idEspecialidade, @codTipoPlantao, @crmEscalado, 'ABERTO', @dataExpiracao, @criadoPor)
     `);
   return result.recordset[0].IDPLANTAO;
@@ -149,12 +152,14 @@ async function atualizar(idPlantao, dados) {
 
   const pool = await getPool();
   const dataExpiracao = calcularDataExpiracao(dados.data, dados.horaFim);
-  const empresa = resolverEmpresa(dados);
+  const codFilial = parseInt(dados.codFilial, 10);
+  if (!Number.isFinite(codFilial)) {
+    throw new Error("Filial inválida para gravação do plantão.");
+  }
 
   await pool.request()
     .input("id", sql.Int, idPlantao)
-    .input("codFilial", sql.Int, dados.codFilial)
-    .input("empresa", sql.Int, empresa)
+    .input("codFilial", sql.Int, codFilial)
     .input("codCCusto", sql.VarChar, dados.codCCusto)
     .input("data", sql.Date, dados.data)
     .input("horaInicio", sql.VarChar, dados.horaInicio)
@@ -165,23 +170,12 @@ async function atualizar(idPlantao, dados) {
     .input("dataExpiracao", sql.DateTime, dataExpiracao)
     .query(`
       UPDATE ESCALAMEDICA SET
-        CODFILIAL = @codFilial, EMPRESA = @empresa, CODCCUSTO = @codCCusto,
+        CODFILIAL = @codFilial, EMPRESA = @codFilial, CODCCUSTO = @codCCusto,
         DATA = @data, HORAINICIO = @horaInicio, HORAFIM = @horaFim,
         IDESPECIALIDADE = @idEspecialidade, CODTIPOPLANTAO = @codTipoPlantao,
         CRM_ESCALADO = @crmEscalado, DATAEXPIRACAO = @dataExpiracao
       WHERE IDPLANTAO = @id
     `);
-}
-
-function resolverEmpresa(dados) {
-  const valor = dados.empresa != null && dados.empresa !== ""
-    ? dados.empresa
-    : dados.codFilial;
-  const n = parseInt(valor, 10);
-  if (!Number.isFinite(n)) {
-    throw new Error("Empresa/filial inválida para gravação do plantão.");
-  }
-  return n;
 }
 
 async function buscarConflitosHorario({ crmEscalado, data, horaInicio, horaFim, excluirId = null }) {
