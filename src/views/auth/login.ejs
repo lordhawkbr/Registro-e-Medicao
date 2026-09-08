@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Login - Escala Médica</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <main class="container" style="max-width:360px; margin-top:80px;">
+    <h1>Entrar</h1>
+
+    <div class="tabs">
+      <button type="button" class="tab tab-active" id="tabMedicoBtn" onclick="mostrarTab('medico')">Médico</button>
+      <button type="button" class="tab" id="tabAdminBtn" onclick="mostrarTab('admin')">Administrativo</button>
+    </div>
+
+    <% if (erro) { %>
+      <div class="alert alert-danger"><%= erro %></div>
+    <% } %>
+
+    <form id="formMedico" method="post" action="/login/medico" class="form-grid" style="grid-template-columns:1fr 80px;">
+      <label>
+        CRM
+        <input type="text" name="crm" autofocus placeholder="Ex: 76505">
+      </label>
+      <label>
+        UF
+        <select name="crmUf">
+          <option value="">UF</option>
+          <option>AC</option><option>AL</option><option>AP</option><option>AM</option>
+          <option>BA</option><option>CE</option><option>DF</option><option>ES</option>
+          <option>GO</option><option>MA</option><option>MT</option><option>MS</option>
+          <option>MG</option><option>PA</option><option>PB</option><option>PR</option>
+          <option>PE</option><option>PI</option><option>RJ</option><option>RN</option>
+          <option>RS</option><option>RO</option><option>RR</option><option>SC</option>
+          <option>SP</option><option>SE</option><option>TO</option>
+        </select>
+      </label>
+      <label style="grid-column: 1 / -1;">
+        CPF (apenas números)
+        <input type="text" name="cpf" inputmode="numeric" placeholder="Somente números" maxlength="11">
+      </label>
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary">Entrar</button>
+      </div>
+    </form>
+
+    <form id="formAdmin" method="post" action="/login/admin" class="form-grid" style="grid-template-columns:1fr; display:none;">
+      <label>
+        Login
+        <input type="text" name="login" placeholder="Login Fluig">
+      </label>
+      <label>
+        Senha
+        <input type="password" name="senha">
+      </label>
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary">Entrar</button>
+      </div>
+    </form>
+  </main>
+
+  <script>
+    function mostrarTab(tab) {
+      document.getElementById("formMedico").style.display = tab === "medico" ? "grid" : "none";
+      document.getElementById("formAdmin").style.display = tab === "admin" ? "grid" : "none";
+      document.getElementById("tabMedicoBtn").classList.toggle("tab-active", tab === "medico");
+      document.getElementById("tabAdminBtn").classList.toggle("tab-active", tab === "admin");
+    }
+  </script>
+</body>
+</html>

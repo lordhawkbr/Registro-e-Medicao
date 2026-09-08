@@ -1,0 +1,44 @@
+<h1>Justificativa de Ausência de Registro</h1>
+
+<% if (erro) { %>
+  <div class="alert alert-danger"><%= erro %></div>
+<% } %>
+
+<% if (!plantao) { %>
+  <div class="alert alert-danger">Plantão não informado ou não encontrado.</div>
+<% } else { %>
+  <div class="card-plantao">
+    Plantão #<%= plantao.IDPLANTAO %> — <%= new Date(plantao.DATA).toLocaleDateString('pt-BR') %> —
+    <%= plantao.HORAINICIO %> às <%= plantao.HORAFIM %> —
+    Filial <%= plantao.CODFILIAL %> / Setor <%= plantao.CODCCUSTO %>
+  </div>
+
+  <form method="post" action="/justificativa" class="form-grid">
+    <input type="hidden" name="idPlantao" value="<%= plantao.IDPLANTAO %>">
+
+    <label>
+      Tipo de ausência
+      <select name="tipoAusencia" required>
+        <option value="">Selecione</option>
+        <option value="ENTRADA_NAO_REGISTRADA">Entrada não registrada</option>
+        <option value="SAIDA_NAO_REGISTRADA">Saída não registrada</option>
+        <option value="PLANTAO_INTEIRO">Plantão inteiro sem registro</option>
+      </select>
+    </label>
+
+    <label>
+      Horário real (se souber)
+      <input type="datetime-local" name="dataHoraReal">
+    </label>
+
+    <label style="grid-column: 1 / -1;">
+      Motivo
+      <textarea name="motivo" rows="4" required placeholder="Explique o que aconteceu"></textarea>
+    </label>
+
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary">Enviar justificativa</button>
+      <a href="/registro-acesso" class="btn">Cancelar</a>
+    </div>
+  </form>
+<% } %>

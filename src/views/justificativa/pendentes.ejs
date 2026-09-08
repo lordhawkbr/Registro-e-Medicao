@@ -1,0 +1,28 @@
+<div class="page-header">
+  <h1>Justificativas Pendentes de Aprovação</h1>
+  <form method="post" action="/logout"><button class="btn">Sair</button></form>
+</div>
+
+<% if (justificativas.length === 0) { %>
+  <p>Nenhuma justificativa pendente.</p>
+<% } %>
+
+<% justificativas.forEach(j => { %>
+  <div class="card-plantao">
+    <div>
+      <strong>#<%= j.IDJUSTIFICATIVA %></strong> — CRM <%= j.CRM %> —
+      Plantão #<%= j.IDPLANTAO %> (<%= new Date(j.DATA).toLocaleDateString('pt-BR') %>,
+      <%= j.HORAINICIO %>-<%= j.HORAFIM %>, Filial <%= j.CODFILIAL %>/Setor <%= j.CODCCUSTO %>)
+    </div>
+    <div><strong>Tipo:</strong> <%= j.TIPOAUSENCIA %></div>
+    <div><strong>Motivo:</strong> <%= j.MOTIVO %></div>
+    <% if (j.DATAHORAREAL) { %>
+      <div><strong>Horário informado:</strong> <%= new Date(j.DATAHORAREAL).toLocaleString('pt-BR') %></div>
+    <% } %>
+
+    <form method="post" action="/justificativa/<%= j.IDJUSTIFICATIVA %>/decisao" style="margin-top:10px; display:flex; gap:8px;">
+      <button type="submit" name="decisao" value="APROVADO" class="btn btn-primary">Aprovar</button>
+      <button type="submit" name="decisao" value="REPROVADO" class="btn">Reprovar</button>
+    </form>
+  </div>
+<% }) %>

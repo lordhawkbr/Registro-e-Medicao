@@ -1,0 +1,77 @@
+const { sql, getPool } = require("../config/db");
+
+async function criar(dados, crm) {
+  const pool = await getPool();
+  const result = await pool.request()
+    .input("idPlantao", sql.Int, dados.idPlantao)
+    .input("crm", sql.VarChar, crm)
+    .input("tipoAusencia", sql.VarChar, dados.tipoAusencia)
+    .input("dataHoraReal", sql.DateTime, dados.dataHoraReal || null)
+    .input("motivo", sql.VarChar(sql.MAX), dados.motivo)
+    .query(`
+      INSERT INTO JUSTIFICATIVAAUSENCIA
+        (IDPLANTAO, CRM, TIPOAUSENCIA, DATAHORAREAL, MOTIVO, STATUSAPROVACAO)
+      OUTPUT INSERTED.IDJUSTIFICATIVA
+      VALUES
+        (@idPlantao, @crm, @tipoAusencia, @dataHoraReal, @motivo, 'PENDENTE')
+    `);
+
+  await pool.request()
+    .input("id", sql.Int, dados.idPlantao)
+    .query("UPDATE ESCALAMEDICA SET STATUS = 'PENDENTE_JUSTIFICATIVA' WHERE IDPLANTAO = @id");
+
+  return result.recordset[0].IDJUSTIFICATIVA;
+}
+
+async function listarPorCrm(crm) {
+  const pool = await getPool();
+  const result = await pool.request()
+    .input("crm", sql.VarChar, crm)
+    .query(`
+      SELECT j.*, e.DATA, e.HORAINICIO, e.HORAFIM, e.CODFILIAL, e.CODCCUSTO
+      FROM JUSTIFICATIVAAUSENCIA j
+      INNER JOIN ESCALAMEDICA e ON e.IDPLANTAO = j.IDPLANTAO
+      WHERE j.CRM = @crm
+      ORDER BY j.RECCREATEDON DESC
+    `);
+  return result.recordset;
+}
+
+async function listarPendentes() {
+  const pool = await getPool();
+  const result = await pool.request().query(`
+    SELECT j.*, e.DATA, e.HORAINICIO, e.HORAFIM, e.CODFILIAL, e.CODCCUSTO
+    FROM JUSTIFICATIVAAUSENCIA j
+    INNER JOIN ESCALAMEDICA e ON e.IDPLANTAO = j.IDPLANTAO
+    WHERE j.STATUSAPROVACAO = 'PENDENTE'
+    ORDER BY j.RECCREATEDON ASC
+  `);
+  return result.recordset;
+}
+
+async function aprovar(idJustificativa, aprovadoPor, statusAprovacao) {
+  const pool = await getPool();
+
+  const result = await pool.request()
+    .input("id", sql.Int, idJustificativa)
+    .input("status", sql.VarChar, statusAprovacao)
+    .input("aprovadoPor", sql.VarChar, aprovadoPor)
+    .query(`
+      UPDATE JUSTIFICATIVAAUSENCIA SET
+        STATUSAPROVACAO = @status,
+        APROVADOPOR = @aprovadoPor,
+        DATAAPROVACAO = GETDATE()
+      OUTPUT INSERTED.IDPLANTAO
+      WHERE IDJUSTIFICATIVA = @id
+    `);
+
+  const idPlantao = result.recordset[0].IDPLANTAO;
+  const novoStatusPlantao = statusAprovacao === "APROVADO" ? "CONCLUIDO" : "ABERTO";
+
+  await pool.request()
+    .input("id", sql.Int, idPlantao)
+    .input("status", sql.VarChar, novoStatusPlantao)
+    .query("UPDATE ESCALAMEDICA SET STATUS = @status WHERE IDPLANTAO = @id");
+}
+
+module.exports = { criar, listarPorCrm, listarPendentes, aprovar };

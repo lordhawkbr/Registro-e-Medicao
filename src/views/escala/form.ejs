@@ -1,0 +1,137 @@
+<h1>
+  <%= plantao && plantao.IDPLANTAO ? "Editar plantão" : "Novo plantão" %>
+</h1>
+
+<% if (erro) { %>
+  <div class="alert alert-danger">
+    <%= erro %>
+  </div>
+  <% } %>
+
+    <form id="formEscala" method="post"
+      action="<%= plantao && plantao.IDPLANTAO ? `/escala/${plantao.IDPLANTAO}?_method=PUT` : " /escala" %>"
+      class="form-grid"
+      >
+      <input type="hidden" name="idEspecialidade" required value="<%= plantao ? plantao.IDESPECIALIDADE : '' %>">
+
+      <label>
+        Filial
+        <select name="codFilial" id="selFilial" required>
+          <option value="">Selecione a filial</option>
+          <% filiais.forEach(f=> { %>
+            <option value="<%= f.codFilial %>" <%=plantao && String(plantao.CODFILIAL)===String(f.codFilial)
+              ? "selected" : "" %>>
+              <%= f.nome %>
+            </option>
+            <% }) %>
+        </select>
+      </label>
+
+      <label>
+        Empresa
+        <input type="text" name="empresa" id="inpEmpresa" required readonly
+          value="<%= plantao ? plantao.EMPRESA : '' %>">
+      </label>
+
+      <label>
+        Centro de custo (setor)
+        <select name="codCCusto" id="selSetor" required>
+          <option value="">Selecione a filial primeiro</option>
+          <% if (plantao && plantao.CODCCUSTO) { %>
+            <option value="<%= plantao.CODCCUSTO %>" selected>
+              <%= plantao.CODCCUSTO %>
+            </option>
+            <% } %>
+        </select>
+      </label>
+
+      <label>
+        Data
+        <input type="date" name="data" required value="<%= plantao ? plantao.DATA : '' %>">
+      </label>
+
+      <label>
+        Hora início
+        <input type="time" name="horaInicio" required value="<%= plantao ? plantao.HORAINICIO : '' %>">
+      </label>
+
+      <label>
+        Hora fim
+        <input type="time" name="horaFim" required value="<%= plantao ? plantao.HORAFIM : '' %>">
+      </label>
+
+      <label>
+        Tipo de plantão
+        <select name="codTipoPlantao" id="selTipoPlantao" required>
+          <option value="">Selecione filial e setor primeiro</option>
+          <% if (plantao && plantao.CODTIPOPLANTAO) { %>
+            <option value="<%= plantao.CODTIPOPLANTAO %>" selected>Tipo #<%= plantao.CODTIPOPLANTAO %> (atual)</option>
+            <% } %>
+        </select>
+      </label>
+
+      <label>
+        CRM do médico escalado
+        <input type="text" name="crmEscalado" required value="<%= plantao ? plantao.CRM_ESCALADO : '' %>">
+      </label>
+
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary">Salvar</button>
+        <a href="/escala" class="btn">Cancelar</a>
+      </div>
+    </form>
+
+    <script>
+      const selFilial = document.getElementById("selFilial");
+      const inpEmpresa = document.getElementById("inpEmpresa");
+      const selSetor = document.getElementById("selSetor");
+      const selTipoPlantao = document.getElementById("selTipoPlantao");
+
+      async function carregarEmpresa(codFilial) {
+        if (!codFilial) { inpEmpresa.value = ""; return; }
+        const res = await fetch(`/api/empresa/${codFilial}`);
+        const data = await res.json();
+        inpEmpresa.value = data.empresa || "";
+      }
+
+      async function carregarSetores(codFilial, setorSelecionadoAtual) {
+        selSetor.innerHTML = '<option value="">Carregando...</option>';
+        if (!codFilial) {
+          selSetor.innerHTML = '<option value="">Selecione a filial primeiro</option>';
+          return;
+        }
+        const res = await fetch(`/api/setores/${codFilial}`);
+        const setores = await res.json();
+        selSetor.innerHTML = '<option value="">Selecione o setor</option>' +
+          setores.map(s => `<option value="${s.CODCCUSTO}" ${String(s.CODCCUSTO) === String(setorSelecionadoAtual) ? "selected" : ""}>${s.NOME}</option>`).join("");
+      }
+
+      async function carregarTiposPlantao(codFilial, codCCusto, tipoSelecionadoAtual) {
+        selTipoPlantao.innerHTML = '<option value="">Carregando...</option>';
+        if (!codFilial || !codCCusto) {
+          selTipoPlantao.innerHTML = '<option value="">Selecione filial e setor primeiro</option>';
+          return;
+        }
+        const res = await fetch(`/api/tipos-plantao?codFilial=${codFilial}&codCCusto=${codCCusto}`);
+        const tipos = await res.json();
+        selTipoPlantao.innerHTML = '<option value="">Selecione o tipo de plantão</option>' +
+          tipos.map(t => `<option value="${t.IDPRD}" ${String(t.IDPRD) === String(tipoSelecionadoAtual) ? "selected" : ""}>${t.DESCRICAO} (${t.TURNO}/${t.TIPO})</option>`).join("");
+      }
+
+      selFilial.addEventListener("change", () => {
+        carregarEmpresa(selFilial.value);
+        carregarSetores(selFilial.value, null);
+        selTipoPlantao.innerHTML = '<option value="">Selecione filial e setor primeiro</option>';
+      });
+
+      selSetor.addEventListener("change", () => {
+        carregarTiposPlantao(selFilial.value, selSetor.value, null);
+      });
+
+      // Edicao: pre-carrega setor e tipo de plantao ja salvos
+      const filialInicial = selFilial.value;
+      if (filialInicial) {
+        carregarSetores(filialInicial, "<%= plantao ? plantao.CODCCUSTO : '' %>");
+        carregarTiposPlantao(filialInicial, "<%= plantao ? plantao.CODCCUSTO : '' %>", "<%= plantao ? plantao.CODTIPOPLANTAO : '' %>");
+      }
+    </script>

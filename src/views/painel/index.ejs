@@ -1,0 +1,80 @@
+<div class="page-header">
+  <h1>Olá, <%= nome %></h1>
+  <form method="post" action="/logout"><button class="btn">Sair</button></form>
+</div>
+
+<div class="tabs">
+  <a class="tab <%= tab === 'registros' ? 'tab-active' : '' %>" href="/painel?tab=registros">Registros</a>
+  <a class="tab <%= tab === 'justificativas' ? 'tab-active' : '' %>" href="/painel?tab=justificativas">Justificativas (<%= justificativas.length %>)</a>
+</div>
+
+<% if (tab === "registros") { %>
+
+  <h2>Pendentes (<%= pendentes.length %>)</h2>
+  <% if (pendentes.length === 0) { %>
+    <p>Nenhum plantão pendente.</p>
+  <% } %>
+  <% pendentes.forEach(({ plantao, registros }) => { %>
+    <div class="card-plantao">
+      <div>
+        <strong>Plantão #<%= plantao.IDPLANTAO %></strong> —
+        <%= new Date(plantao.DATA).toLocaleDateString('pt-BR') %> —
+        <%= plantao.HORAINICIO %> às <%= plantao.HORAFIM %> —
+        Filial <%= plantao.CODFILIAL %> / Setor <%= plantao.CODCCUSTO %>
+        <span class="badge badge-<%= plantao.STATUS.toLowerCase() %>"><%= plantao.STATUS %></span>
+      </div>
+      <ul class="lista-registros">
+        <% registros.forEach(r => { %><li><%= r.TIPO %> às <%= r.HORABATIDA %></li><% }) %>
+      </ul>
+      <a class="btn btn-primary" href="/registro-acesso">Ir para registro de hoje</a>
+    </div>
+  <% }) %>
+
+  <h2>Já concluídos</h2>
+  <% if (concluidos.length === 0) { %>
+    <p>Nenhum registro concluído ainda.</p>
+  <% } %>
+  <table class="tabela">
+    <thead>
+      <tr><th>ID</th><th>Data</th><th>Horário</th><th>Filial/Setor</th><th>Status</th><th>Registros</th></tr>
+    </thead>
+    <tbody>
+      <% concluidos.forEach(({ plantao, registros }) => { %>
+        <tr>
+          <td><%= plantao.IDPLANTAO %></td>
+          <td><%= new Date(plantao.DATA).toLocaleDateString('pt-BR') %></td>
+          <td><%= plantao.HORAINICIO %>-<%= plantao.HORAFIM %></td>
+          <td><%= plantao.CODFILIAL %>/<%= plantao.CODCCUSTO %></td>
+          <td><span class="badge badge-<%= plantao.STATUS.toLowerCase() %>"><%= plantao.STATUS %></span></td>
+          <td><%= registros.map(r => `${r.TIPO} ${r.HORABATIDA}`).join(" · ") %></td>
+        </tr>
+      <% }) %>
+    </tbody>
+  </table>
+
+<% } else { %>
+
+  <div class="page-header">
+    <h2>Minhas Justificativas</h2>
+  </div>
+  <table class="tabela">
+    <thead>
+      <tr><th>ID</th><th>Plantão</th><th>Data</th><th>Tipo</th><th>Status</th></tr>
+    </thead>
+    <tbody>
+      <% if (justificativas.length === 0) { %>
+        <tr><td colspan="5">Nenhuma justificativa enviada.</td></tr>
+      <% } %>
+      <% justificativas.forEach(j => { %>
+        <tr>
+          <td><%= j.IDJUSTIFICATIVA %></td>
+          <td>#<%= j.IDPLANTAO %></td>
+          <td><%= new Date(j.DATA).toLocaleDateString('pt-BR') %></td>
+          <td><%= j.TIPOAUSENCIA %></td>
+          <td><span class="badge badge-<%= j.STATUSAPROVACAO.toLowerCase() %>"><%= j.STATUSAPROVACAO %></span></td>
+        </tr>
+      <% }) %>
+    </tbody>
+  </table>
+
+<% } %>

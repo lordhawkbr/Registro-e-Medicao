@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Login Equipe - Escala Médica</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <main class="container" style="max-width:360px; margin-top:80px;">
+    <h1>Login Equipe</h1>
+    <% if (erro) { %>
+      <div class="alert alert-danger"><%= erro %></div>
+    <% } %>
+    <form method="post" action="/login-equipe" class="form-grid" style="grid-template-columns:1fr;">
+      <label>
+        Usuário
+        <input type="text" name="login" required autofocus>
+      </label>
+      <label>
+        Senha
+        <input type="password" name="senha" required>
+      </label>
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary">Entrar</button>
+      </div>
+    </form>
+    <p style="margin-top:16px; font-size:13px;">
+      <a href="/login">Sou médico</a>
+    </p>
+  </main>
+</body>
+</html>

@@ -1,0 +1,56 @@
+<div class="page-header">
+  <h1>Plantões</h1>
+  <div style="display:flex; gap:8px;">
+    <a class="btn btn-primary" href="/escala/novo">+ Novo plantão</a>
+    <form method="post" action="/logout"><button class="btn">Sair</button></form>
+  </div>
+</div>
+
+<form method="get" class="filtros">
+  <input type="date" name="data" value="<%= filtros.data || '' %>">
+  <input type="number" name="codFilial" placeholder="Filial" value="<%= filtros.codFilial || '' %>">
+  <select name="status">
+    <option value="">Status (todos)</option>
+    <% ["ABERTO","EM_ANDAMENTO","CONCLUIDO","CANCELADO","PENDENTE_JUSTIFICATIVA"].forEach(s => { %>
+      <option value="<%= s %>" <%= filtros.status === s ? "selected" : "" %>><%= s %></option>
+    <% }) %>
+  </select>
+  <button type="submit">Filtrar</button>
+</form>
+
+<table class="tabela">
+  <thead>
+    <tr>
+      <th>ID</th>
+      <th>Data</th>
+      <th>Horário</th>
+      <th>Filial</th>
+      <th>Setor</th>
+      <th>CRM Escalado</th>
+      <th>Status</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <% if (plantoes.length === 0) { %>
+      <tr><td colspan="8">Nenhum plantão encontrado.</td></tr>
+    <% } %>
+    <% plantoes.forEach(p => { %>
+      <tr>
+        <td><%= p.IDPLANTAO %></td>
+        <td><%= new Date(p.DATA).toLocaleDateString('pt-BR') %></td>
+        <td><%= p.HORAINICIO %> - <%= p.HORAFIM %></td>
+        <td><%= p.CODFILIAL %></td>
+        <td><%= p.CODCCUSTO %></td>
+        <td><%= p.CRM_ESCALADO %></td>
+        <td><span class="badge badge-<%= p.STATUS.toLowerCase() %>"><%= p.STATUS %></span></td>
+        <td>
+          <a href="/escala/<%= p.IDPLANTAO %>/editar">Editar</a>
+          <form method="post" action="/escala/<%= p.IDPLANTAO %>?_method=DELETE" style="display:inline" onsubmit="return confirm('Cancelar este plantão?')">
+            <button type="submit" class="link-danger">Cancelar</button>
+          </form>
+        </td>
+      </tr>
+    <% }) %>
+  </tbody>
+</table>
