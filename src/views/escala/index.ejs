@@ -1,98 +1,107 @@
-<div class="page-header">
-  <h1>Plantões</h1>
-  <div class="page-header-actions">
-    <a class="btn btn-primary" href="/escala/novo">+ Novo plantão</a>
-    <a class="btn" href="/justificativa/pendentes">Justificativas</a>
-    <form method="post" action="/logout"><button class="btn">Sair</button></form>
+<div class="page-escala-lista">
+  <div class="page-header">
+    <h1>Plantões</h1>
+    <div class="page-header-actions">
+      <a class="btn btn-primary" href="/escala/novo">+ Novo plantão</a>
+      <a class="btn" href="/justificativa/pendentes">Justificativas</a>
+      <form method="post" action="/logout"><button class="btn">Sair</button></form>
+    </div>
   </div>
-</div>
 
-<form method="get" class="filtros filtros-card">
-  <label>
-    Data
-    <input type="date" name="data" value="<%= filtros.data || '' %>">
-  </label>
-  <label>
-    Filial
-    <select name="codFilial">
-      <option value="">Todas</option>
-      <% filiais.forEach(f => { %>
-        <option value="<%= f.codFilial %>" <%= String(filtros.codFilial || '') === String(f.codFilial) ? 'selected' : '' %>>
-          <%= f.nome %>
-        </option>
-      <% }) %>
-    </select>
-  </label>
-  <label>
-    Status
-    <select name="status">
-      <option value="">Todos</option>
-      <% [
-        ["ABERTO","Aberto"],
-        ["EM_ANDAMENTO","Em andamento"],
-        ["CONCLUIDO","Concluído"],
-        ["CANCELADO","Cancelado"],
-        ["PENDENTE_JUSTIFICATIVA","Justificativa pendente"]
-      ].forEach(([v,l]) => { %>
-        <option value="<%= v %>" <%= filtros.status === v ? "selected" : "" %>><%= l %></option>
-      <% }) %>
-    </select>
-  </label>
-  <div class="filtros-actions">
-    <button type="submit" class="btn btn-primary">Filtrar</button>
-    <a class="btn" href="/escala">Limpar</a>
-  </div>
-</form>
+  <form method="get" class="filtros filtros-card">
+    <label>
+      Data
+      <input type="date" name="data" value="<%= filtros.data || '' %>">
+    </label>
+    <label>
+      Filial
+      <select name="codFilial">
+        <option value="">Todas</option>
+        <% filiais.forEach(f => { %>
+          <option value="<%= f.codFilial %>" <%= String(filtros.codFilial || '') === String(f.codFilial) ? 'selected' : '' %>>
+            <%= f.nome %>
+          </option>
+        <% }) %>
+      </select>
+    </label>
+    <label>
+      Status
+      <select name="status">
+        <option value="">Todos</option>
+        <% [
+          ["ABERTO","Aberto"],
+          ["EM_ANDAMENTO","Em andamento"],
+          ["CONCLUIDO","Concluído"],
+          ["CANCELADO","Cancelado"],
+          ["PENDENTE_JUSTIFICATIVA","Justificativa pendente"]
+        ].forEach(([v,l]) => { %>
+          <option value="<%= v %>" <%= filtros.status === v ? "selected" : "" %>><%= l %></option>
+        <% }) %>
+      </select>
+    </label>
+    <div class="filtros-actions">
+      <button type="submit" class="btn btn-primary">Filtrar</button>
+      <a class="btn" href="/escala">Limpar</a>
+    </div>
+  </form>
 
-<div class="tabela-scroll">
-  <table class="tabela">
-    <thead>
-      <tr>
-        <th>ID</th>
-        <th>Data</th>
-        <th>Horário</th>
-        <th>Filial</th>
-        <th>Setor</th>
-        <th>Médico</th>
-        <th>Conclusão</th>
-        <th></th>
-      </tr>
-    </thead>
-    <tbody>
-      <% if (plantoes.length === 0) { %>
-        <tr><td colspan="8">Nenhum plantão encontrado.</td></tr>
-      <% } %>
-      <% plantoes.forEach(p => { %>
+  <div class="tabela-scroll">
+    <table class="tabela tabela-plantoes">
+      <thead>
         <tr>
-          <td><%= p.IDPLANTAO %></td>
-          <td><%= p.DATA_INPUT ? p.DATA_INPUT.split('-').reverse().join('/') : '' %></td>
-          <td class="col-horario"><%= p.HORARIO_FORMATADO %></td>
-          <td><%= p.FILIAL_NOME %></td>
-          <td><%= p.SETOR_NOME %></td>
-          <td>
-            <% if (p.MEDICO_NOME) { %>
-              <div><%= p.MEDICO_NOME %></div>
-              <div class="muted"><%= p.CRM_ESCALADO %></div>
-            <% } else { %>
-              <%= p.CRM_ESCALADO %>
-            <% } %>
-          </td>
-          <td>
-            <span class="badge badge-<%= p.CONCLUSAO.classe %>"><%= p.CONCLUSAO.label %></span>
-            <div class="muted" style="margin-top:4px;"><%= p.STATUS %></div>
-          </td>
-          <td class="col-acoes">
-            <% if (p.PODE_EDITAR) { %>
-              <a href="/escala/<%= p.IDPLANTAO %>/editar">Editar</a>
-              <form method="post" action="/escala/<%= p.IDPLANTAO %>?_method=DELETE" style="display:inline" onsubmit="return confirm('Cancelar este plantão?')">
-                <button type="submit" class="link-danger">Cancelar</button>
-              </form>
-            <% } else { %>
-              <span class="muted">—</span>
-            <% } %>
-          </td>
+          <th class="col-id">ID</th>
+          <th class="col-data">Data</th>
+          <th class="col-horario">Horário</th>
+          <th>Filial</th>
+          <th>Setor</th>
+          <th>Médico</th>
+          <th class="col-conclusao">Conclusão</th>
+          <th class="col-acoes">Ações</th>
         </tr>
-      <% }) %>
-    </tbody>
-  </table>
+      </thead>
+      <tbody>
+        <% if (plantoes.length === 0) { %>
+          <tr><td colspan="8">Nenhum plantão encontrado.</td></tr>
+        <% } %>
+        <% plantoes.forEach(p => { %>
+          <tr>
+            <td class="col-id"><%= p.IDPLANTAO %></td>
+            <td class="col-data"><%= p.DATA_INPUT ? p.DATA_INPUT.split('-').reverse().join('/') : '' %></td>
+            <td class="col-horario" title="<%= p.HORARIO_FORMATADO %>"><%= p.HORARIO_CURTO || p.HORARIO_FORMATADO %></td>
+            <td><%= p.FILIAL_NOME %></td>
+            <td><%= p.SETOR_NOME %></td>
+            <td>
+              <% if (p.MEDICO_NOME) { %>
+                <div class="cell-nome"><%= p.MEDICO_NOME %></div>
+                <div class="muted"><%= p.CRM_ESCALADO %></div>
+              <% } else { %>
+                <%= p.CRM_ESCALADO %>
+              <% } %>
+            </td>
+            <td class="col-conclusao">
+              <span class="tag tag-<%= p.CONCLUSAO.classe %>"><%= p.CONCLUSAO.label %></span>
+            </td>
+            <td class="col-acoes">
+              <% if (p.PODE_EDITAR) { %>
+                <div class="acoes-btns" role="group" aria-label="Ações do plantão">
+                  <a class="btn-acao btn-editar" href="/escala/<%= p.IDPLANTAO %>/editar" title="Editar">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 20h4.5L19 9.5 14.5 5 4 15.5V20z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M13 6.5 17.5 11" stroke="currentColor" stroke-width="2"/></svg>
+                    Editar
+                  </a>
+                  <form method="post" action="/escala/<%= p.IDPLANTAO %>?_method=DELETE" onsubmit="return confirm('Cancelar este plantão?')">
+                    <button type="submit" class="btn-acao btn-cancelar" title="Cancelar">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                      Cancelar
+                    </button>
+                  </form>
+                </div>
+              <% } else { %>
+                <span class="muted">—</span>
+              <% } %>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
 </div>

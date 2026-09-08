@@ -10,7 +10,7 @@
   <nav class="medico-tabs medico-tabs-3">
     <a class="medico-tab <%= tab === 'plantoes' ? 'is-active' : '' %>" href="/painel?tab=plantoes&mes=<%= calendario.mesAtual %>&dia=<%= diaSelecionado %>">Calendário</a>
     <a class="medico-tab <%= tab === 'abertos' ? 'is-active' : '' %>" href="/painel?tab=abertos">
-      Abertos<% if (plantoesAbertos.length) { %> (<%= plantoesAbertos.length %>)<% } %>
+      Em andamento<% if (plantoesAbertos.length) { %> (<%= plantoesAbertos.length %>)<% } %>
     </a>
     <a class="medico-tab <%= tab === 'justificativas' ? 'is-active' : '' %>" href="/painel?tab=justificativas">Justificativas</a>
   </nav>
@@ -94,11 +94,11 @@
   <% } else if (tab === "abertos") { %>
 
     <section class="dia-detalhe">
-      <h2>Plantões em aberto</h2>
-      <p class="muted">Aberto ou em andamento — atalho sem usar o calendário.</p>
+      <h2>Plantões em andamento</h2>
+      <p class="muted">Já iniciados (entrada registrada). Pendentes ficam no calendário.</p>
 
       <% if (plantoesAbertos.length === 0) { %>
-        <p class="muted">Nenhum plantão em aberto.</p>
+        <p class="muted">Nenhum plantão em andamento.</p>
       <% } %>
 
       <div class="<%= plantoesAbertos.length > 1 ? 'plantao-lista-compacta' : '' %>">
