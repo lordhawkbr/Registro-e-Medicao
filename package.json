@@ -5,7 +5,8 @@
   "main": "src/app.js",
   "scripts": {
     "start": "node src/app.js",
-    "dev": "nodemon src/app.js"
+    "dev": "nodemon src/app.js",
+    "reset:testes": "node scripts/resetTestes.js --confirm"
   },
   "dependencies": {
     "dotenv": "^16.4.5",
