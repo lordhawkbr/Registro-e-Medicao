@@ -163,7 +163,7 @@ body.body-admin .container-lista .filtros-card {
   box-shadow: none;
   border-radius: 0;
   width: 100%;
-  table-layout: fixed;
+  /* table-layout: fixed; */
 }
 
 .tabela-scroll thead th {
@@ -185,7 +185,7 @@ body.body-admin .container-lista .filtros-card {
 }
 
 .tabela-plantoes .col-data {
-  width: 78px;
+  width: 110px;
 }
 
 .tabela-plantoes .col-filial {
@@ -195,8 +195,8 @@ body.body-admin .container-lista .filtros-card {
   font-weight: 700;
 }
 
-.tabela-plantoes .col-horario {
-  width: auto;
+.tabela-plantoes .col-horario, .tabela-plantoes .col-setor, .tabela-plantoes .col-medico {
+  width: 120px;
   font-variant-numeric: tabular-nums;
   white-space: normal;
   overflow: hidden;
@@ -456,11 +456,6 @@ h2 {
   flex-wrap: wrap;
 }
 
-.col-horario {
-  min-width: 220px;
-  max-width: 320px;
-}
-
 .col-acoes {
   white-space: nowrap;
 }
@@ -485,7 +480,6 @@ h2 {
   width: 100%;
   max-width: 880px;
   margin: 0 auto;
-  /* overflow: hidden; */
 }
 
 .form-escala {
@@ -757,8 +751,7 @@ h2 {
 
 .muted {
   color: var(--muted);
-  font-size: 13px;
-  margin: 4px 0;
+  font-size: 11px;
 }
 
 /* Login */

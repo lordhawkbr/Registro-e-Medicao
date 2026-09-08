@@ -4,108 +4,107 @@
   </h1>
 
   <% if (erro) { %>
-    <div class="alert alert-danger"><%= erro %></div>
-  <% } %>
-
-  <%
-    const dataVal = plantao ? (plantao.DATA_INPUT || plantao.data || "") : "";
-    const horaIniVal = plantao ? (plantao.HORAINICIO_INPUT || plantao.horaInicio || "") : "";
-    const horaFimVal = plantao ? (plantao.HORAFIM_INPUT || plantao.horaFim || "") : "";
-    const crmBruto = plantao
-      ? (plantao.CRM_ESCALADO || plantao.crmEscalado || [plantao.crmEscalado1, plantao.crmEscalado2, plantao.crmEscalado3].filter(Boolean).join("|") || "")
-      : "";
-    const crmLista = String(crmBruto).split(/[|,;]/).map(s => s.trim()).filter(Boolean).slice(0, 3);
-    while (crmLista.length < 3) crmLista.push("");
-    const especialidadeAtual = plantao ? (plantao.IDESPECIALIDADE || plantao.idEspecialidade || plantao.especialidade || "") : "";
-  %>
-
-  <form id="formEscala" method="post"
-    action="<%= plantao && plantao.IDPLANTAO ? `/escala/${plantao.IDPLANTAO}?_method=PUT` : '/escala' %>"
-    class="form-grid form-escala"
-  >
-    <input type="hidden" name="idEspecialidade" id="inpIdEspecialidade" required value="<%= especialidadeAtual %>">
-    <input type="hidden" name="especialidade" id="inpEspecialidade" value="<%= especialidadeAtual %>">
-
-    <label>
-      Filial
-      <select name="codFilial" id="selFilial" required>
-        <option value="">Selecione</option>
-        <% filiais.forEach(f=> { %>
-          <option value="<%= f.codFilial %>" <%= plantao && String(plantao.CODFILIAL || plantao.codFilial) === String(f.codFilial) ? "selected" : "" %>>
-            <%= f.nome %>
-          </option>
-        <% }) %>
-      </select>
-    </label>
-
-    <label>
-      Centro de custo
-      <select name="codCCusto" id="selSetor" required>
-        <option value="">Selecione a filial</option>
-        <% if (plantao && (plantao.CODCCUSTO || plantao.codCCusto)) { %>
-          <option value="<%= plantao.CODCCUSTO || plantao.codCCusto %>" selected>
-            <%= plantao.SETOR_NOME || plantao.CODCCUSTO || plantao.codCCusto %>
-          </option>
-        <% } %>
-      </select>
-    </label>
-
-    <label class="span-3">
-      Tipo de plantão
-      <select name="codTipoPlantao" id="selTipoPlantao" required>
-        <option value="">Selecione setor</option>
-        <% if (plantao && (plantao.CODTIPOPLANTAO || plantao.codTipoPlantao)) { %>
-          <option value="<%= plantao.CODTIPOPLANTAO || plantao.codTipoPlantao %>" selected>
-            <%= plantao.TIPO_NOME || ('Tipo #' + (plantao.CODTIPOPLANTAO || plantao.codTipoPlantao)) %>
-          </option>
-        <% } %>
-      </select>
-    </label>
-
-    <div class="form-row-horario">
-      <label>
-        Data
-        <input type="date" name="data" id="inpData" required value="<%= dataVal %>">
-      </label>
-      <label>
-        Início
-        <input type="time" name="horaInicio" id="inpHoraInicio" required value="<%= horaIniVal %>">
-      </label>
-      <label>
-        Fim
-        <input type="time" name="horaFim" id="inpHoraFim" required value="<%= horaFimVal %>">
-      </label>
+    <div class="alert alert-danger">
+      <%= erro %>
     </div>
+    <% } %>
 
-    <div class="span-3 medicos-escalados">
-      <p class="medicos-escalados-titulo">Médicos escalados <span class="muted">(até 3)</span></p>
-      <div class="medicos-escalados-grid">
-        <label>
-          Médico 1
-          <select name="crmEscalado1" id="selMedico1" required>
-            <option value="">Selecione tipo de plantão</option>
-          </select>
-        </label>
-        <label>
-          Médico 2 <span class="muted">(opcional)</span>
-          <select name="crmEscalado2" id="selMedico2">
-            <option value="">—</option>
-          </select>
-        </label>
-        <label>
-          Médico 3 <span class="muted">(opcional)</span>
-          <select name="crmEscalado3" id="selMedico3">
-            <option value="">—</option>
-          </select>
-        </label>
-      </div>
-    </div>
+      <% const dataVal=plantao ? (plantao.DATA_INPUT || plantao.data || "" ) : "" ; const horaIniVal=plantao ?
+        (plantao.HORAINICIO_INPUT || plantao.horaInicio || "" ) : "" ; const horaFimVal=plantao ? (plantao.HORAFIM_INPUT
+        || plantao.horaFim || "" ) : "" ; const crmBruto=plantao ? (plantao.CRM_ESCALADO || plantao.crmEscalado ||
+        [plantao.crmEscalado1, plantao.crmEscalado2, plantao.crmEscalado3].filter(Boolean).join("|") || "" ) : "" ;
+        const crmLista=String(crmBruto).split(/[|,;]/).map(s=> s.trim()).filter(Boolean).slice(0, 3);
+        while (crmLista.length < 3) crmLista.push(""); const especialidadeAtual=plantao ? (plantao.IDESPECIALIDADE ||
+          plantao.idEspecialidade || plantao.especialidade || "" ) : "" ; %>
 
-    <div class="form-actions">
-      <button type="submit" class="btn btn-primary">Salvar</button>
-      <a href="/escala" class="btn">Cancelar</a>
-    </div>
-  </form>
+          <form id="formEscala" method="post"
+            action="<%= plantao && plantao.IDPLANTAO ? `/escala/${plantao.IDPLANTAO}?_method=PUT` : '/escala' %>"
+            class="form-grid form-escala">
+            <input type="hidden" name="idEspecialidade" id="inpIdEspecialidade" required
+              value="<%= especialidadeAtual %>">
+            <input type="hidden" name="especialidade" id="inpEspecialidade" value="<%= especialidadeAtual %>">
+
+            <label>
+              Filial
+              <select name="codFilial" id="selFilial" required>
+                <option value="">Selecione</option>
+                <% filiais.forEach(f=> { %>
+                  <option value="<%= f.codFilial %>" <%=plantao && String(plantao.CODFILIAL ||
+                    plantao.codFilial)===String(f.codFilial) ? "selected" : "" %>>
+                    <%= f.nome %>
+                  </option>
+                  <% }) %>
+              </select>
+            </label>
+
+            <label>
+              Centro de custo
+              <select name="codCCusto" id="selSetor" required>
+                <option value="">Selecione a filial</option>
+                <% if (plantao && (plantao.CODCCUSTO || plantao.codCCusto)) { %>
+                  <option value="<%= plantao.CODCCUSTO || plantao.codCCusto %>" selected>
+                    <%= plantao.SETOR_NOME || plantao.CODCCUSTO || plantao.codCCusto %>
+                  </option>
+                  <% } %>
+              </select>
+            </label>
+
+            <label class="span-3">
+              Tipo de plantão
+              <select name="codTipoPlantao" id="selTipoPlantao" required>
+                <option value="">Selecione setor</option>
+                <% if (plantao && (plantao.CODTIPOPLANTAO || plantao.codTipoPlantao)) { %>
+                  <option value="<%= plantao.CODTIPOPLANTAO || plantao.codTipoPlantao %>" selected>
+                    <%= plantao.TIPO_NOME || ('Tipo #' + (plantao.CODTIPOPLANTAO || plantao.codTipoPlantao)) %>
+                  </option>
+                  <% } %>
+              </select>
+            </label>
+
+            <div class="form-row-horario">
+              <label>
+                Data
+                <input type="date" name="data" id="inpData" required value="<%= dataVal %>">
+              </label>
+              <label>
+                Início
+                <input type="time" name="horaInicio" id="inpHoraInicio" required value="<%= horaIniVal %>">
+              </label>
+              <label>
+                Fim
+                <input type="time" name="horaFim" id="inpHoraFim" required value="<%= horaFimVal %>">
+              </label>
+            </div>
+
+            <div class="span-3 medicos-escalados">
+              <p class="medicos-escalados-titulo">Médicos escalados <span class="muted">(até 3)</span></p>
+              <div class="medicos-escalados-grid">
+                <label>
+                  Médico 1
+                  <select name="crmEscalado1" id="selMedico1" required>
+                    <option value="">Selecione tipo de plantão</option>
+                  </select>
+                </label>
+                <label>
+                  <strong>Médico 2 <span class="muted">(opcional)</span></strong>
+                  <select name="crmEscalado2" id="selMedico2">
+                    <option value="">—</option>
+                  </select>
+                </label>
+                <label>
+                  <strong>Médico 3 <span class="muted">(opcional)</span></strong>
+                  <select name="crmEscalado3" id="selMedico3">
+                    <option value="">—</option>
+                  </select>
+                </label>
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary">Salvar</button>
+              <a href="/escala" class="btn">Cancelar</a>
+            </div>
+          </form>
 </div>
 
 <script>
