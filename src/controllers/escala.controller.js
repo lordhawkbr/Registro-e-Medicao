@@ -12,7 +12,12 @@ async function index(req, res, next) {
       escalaModel.listar(filtros),
       referenciaModel.listarFiliais()
     ]);
-    res.render("escala/index", { plantoes, filtros, filiais });
+    res.render("escala/index", {
+      plantoes,
+      filtros,
+      filiais,
+      containerClass: "container-lista"
+    });
   } catch (err) {
     next(err);
   }
@@ -21,7 +26,12 @@ async function index(req, res, next) {
 async function novo(req, res, next) {
   try {
     const filiais = await referenciaModel.listarFiliais();
-    res.render("escala/form", { plantao: null, erro: null, filiais });
+    res.render("escala/form", {
+      plantao: null,
+      erro: null,
+      filiais,
+      containerClass: "container-form"
+    });
   } catch (err) {
     next(err);
   }
@@ -34,7 +44,12 @@ async function criar(req, res, next) {
     res.redirect("/escala");
   } catch (err) {
     const filiais = await referenciaModel.listarFiliais();
-    res.render("escala/form", { plantao: req.body, erro: err.message, filiais });
+    res.render("escala/form", {
+      plantao: req.body,
+      erro: err.message,
+      filiais,
+      containerClass: "container-form"
+    });
   }
 }
 
@@ -46,7 +61,12 @@ async function editar(req, res, next) {
       return res.status(403).send("Este plantão já teve ação do médico e não pode mais ser editado.");
     }
     const filiais = await referenciaModel.listarFiliais();
-    res.render("escala/form", { plantao, erro: null, filiais });
+    res.render("escala/form", {
+      plantao,
+      erro: null,
+      filiais,
+      containerClass: "container-form"
+    });
   } catch (err) {
     next(err);
   }
@@ -59,7 +79,12 @@ async function atualizar(req, res, next) {
   } catch (err) {
     const plantao = { ...req.body, IDPLANTAO: req.params.id };
     const filiais = await referenciaModel.listarFiliais();
-    res.render("escala/form", { plantao, erro: err.message, filiais });
+    res.render("escala/form", {
+      plantao,
+      erro: err.message,
+      filiais,
+      containerClass: "container-form"
+    });
   }
 }
 
