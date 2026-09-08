@@ -218,7 +218,7 @@ body.body-admin .container-lista .filtros-card {
   line-height: 1.25;
 }
 
-.cell-medico + .cell-medico {
+.cell-medico+.cell-medico {
   margin-top: 6px;
   padding-top: 6px;
   border-top: 1px dashed var(--line);
@@ -816,12 +816,12 @@ body.body-medico .container-medico {
   overflow: hidden;
 }
 
-.medico-shell > .medico-header,
-.medico-shell > .medico-tabs,
-.medico-shell > .calendario-card,
-.medico-shell > .btn-voltar-painel,
-.medico-shell > .acesso-data,
-.medico-shell > .alert {
+.medico-shell>.medico-header,
+.medico-shell>.medico-tabs,
+.medico-shell>.calendario-card,
+.medico-shell>.btn-voltar-painel,
+.medico-shell>.acesso-data,
+.medico-shell>.alert {
   flex-shrink: 0;
 }
 
@@ -1027,9 +1027,9 @@ body.body-medico .container-medico {
   -webkit-overflow-scrolling: touch;
 }
 
-.medico-shell > .plantao-lista-compacta,
-.medico-shell > .medico-lista-scroll,
-.medico-shell > div.plantao-lista-compacta {
+.medico-shell>.plantao-lista-compacta,
+.medico-shell>.medico-lista-scroll,
+.medico-shell>div.plantao-lista-compacta {
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
@@ -1222,7 +1222,7 @@ body.body-medico .container-medico {
     display: none;
   }
 
-  .cell-medico + .cell-medico {
+  .cell-medico+.cell-medico {
     margin-top: 4px;
     padding-top: 4px;
   }
