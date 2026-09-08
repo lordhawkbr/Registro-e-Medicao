@@ -1,4 +1,13 @@
 const { sql, getPool } = require("../config/db");
+const { formatarPeriodoPlantao } = require("../utils/horario");
+
+function normalizarJustificativa(row) {
+  if (!row) return row;
+  return {
+    ...row,
+    HORARIO_FORMATADO: formatarPeriodoPlantao(row.DATA, row.HORAINICIO, row.HORAFIM)
+  };
+}
 
 async function criar(dados, crm) {
   const pool = await getPool();
@@ -34,7 +43,7 @@ async function listarPorCrm(crm) {
       WHERE j.CRM = @crm
       ORDER BY j.RECCREATEDON DESC
     `);
-  return result.recordset;
+  return result.recordset.map(normalizarJustificativa);
 }
 
 async function listarPendentes() {
@@ -46,7 +55,7 @@ async function listarPendentes() {
     WHERE j.STATUSAPROVACAO = 'PENDENTE'
     ORDER BY j.RECCREATEDON ASC
   `);
-  return result.recordset;
+  return result.recordset.map(normalizarJustificativa);
 }
 
 async function aprovar(idJustificativa, aprovadoPor, statusAprovacao) {

@@ -5,6 +5,20 @@ async function novo(req, res, next) {
   try {
     const idPlantao = req.query.idPlantao;
     const plantao = idPlantao ? await escalaModel.buscarPorId(idPlantao) : null;
+
+    // Só permite justificativa após passar da tolerância
+    if (plantao) {
+      const registroModel = require("../models/registroAcesso.model");
+      const registros = await registroModel.registrosDoPlantao(plantao.IDPLANTAO);
+      const avaliacao = registroModel.avaliarJanela(plantao, registros);
+      if (!avaliacao.podeJustificar && plantao.STATUS !== "PENDENTE_JUSTIFICATIVA") {
+        return res.render("justificativa/form", {
+          plantao: null,
+          erro: "A justificativa só fica disponível após o horário do plantão (com tolerância)."
+        });
+      }
+    }
+
     res.render("justificativa/form", { plantao, erro: null });
   } catch (err) {
     next(err);
@@ -14,8 +28,23 @@ async function novo(req, res, next) {
 async function criar(req, res, next) {
   try {
     const crm = req.session.crm;
+    const plantao = await escalaModel.buscarPorId(req.body.idPlantao);
+    if (!plantao || plantao.CRM_ESCALADO !== crm) {
+      return res.status(403).send("Este plantão não pertence ao médico logado.");
+    }
+
+    const registroModel = require("../models/registroAcesso.model");
+    const registros = await registroModel.registrosDoPlantao(plantao.IDPLANTAO);
+    const avaliacao = registroModel.avaliarJanela(plantao, registros);
+    if (!avaliacao.podeJustificar && plantao.STATUS !== "PENDENTE_JUSTIFICATIVA") {
+      return res.render("justificativa/form", {
+        plantao,
+        erro: "A justificativa só fica disponível após o horário do plantão (com tolerância)."
+      });
+    }
+
     await justificativaModel.criar(req.body, crm);
-    res.redirect("/justificativa");
+    res.redirect("/painel?tab=justificativas");
   } catch (err) {
     const plantao = await escalaModel.buscarPorId(req.body.idPlantao);
     res.render("justificativa/form", { plantao, erro: err.message });

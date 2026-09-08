@@ -1,4 +1,4 @@
-<h1>Justificativa de Ausência de Registro</h1>
+<h1>Justificativa de ausência</h1>
 
 <% if (erro) { %>
   <div class="alert alert-danger"><%= erro %></div>
@@ -7,13 +7,13 @@
 <% if (!plantao) { %>
   <div class="alert alert-danger">Plantão não informado ou não encontrado.</div>
 <% } else { %>
-  <div class="card-plantao">
-    Plantão #<%= plantao.IDPLANTAO %> — <%= new Date(plantao.DATA).toLocaleDateString('pt-BR') %> —
-    <%= plantao.HORAINICIO %> às <%= plantao.HORAFIM %> —
-    Filial <%= plantao.CODFILIAL %> / Setor <%= plantao.CODCCUSTO %>
+  <div class="plantao-tile">
+    <strong>Plantão #<%= plantao.IDPLANTAO %></strong>
+    <p class="plantao-horario"><%= plantao.HORARIO_FORMATADO || (plantao.HORAINICIO + ' às ' + plantao.HORAFIM) %></p>
+    <p class="muted">Filial <%= plantao.CODFILIAL %> · Setor <%= plantao.CODCCUSTO %></p>
   </div>
 
-  <form method="post" action="/justificativa" class="form-grid">
+  <form method="post" action="/justificativa" class="form-grid form-mobile">
     <input type="hidden" name="idPlantao" value="<%= plantao.IDPLANTAO %>">
 
     <label>
@@ -37,8 +37,8 @@
     </label>
 
     <div class="form-actions">
-      <button type="submit" class="btn btn-primary">Enviar justificativa</button>
-      <a href="/registro-acesso" class="btn">Cancelar</a>
+      <button type="submit" class="btn btn-primary btn-block">Enviar justificativa</button>
+      <a href="/painel?tab=justificativas" class="btn btn-block">Cancelar</a>
     </div>
   </form>
 <% } %>

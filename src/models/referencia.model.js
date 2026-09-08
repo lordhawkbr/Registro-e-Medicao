@@ -59,4 +59,9 @@ async function listarTiposPlantao(codFilial, codCCusto) {
   return result.recordset;
 }
 
-module.exports = { listarFiliais, buscarEmpresaPorFilial, listarSetoresPorFilial, listarTiposPlantao };
+module.exports = {
+  listarFiliais,
+  buscarEmpresaPorFilial,
+  listarSetoresPorFilial,
+  listarTiposPlantao
+};

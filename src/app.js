@@ -30,6 +30,12 @@ app.use(session({
   saveUninitialized: false
 }));
 
+app.use((req, res, next) => {
+  res.locals.sessionTipo = req.session ? req.session.tipoUsuario : null;
+  res.locals.sessionNome = req.session ? req.session.nome : null;
+  next();
+});
+
 app.get("/", (req, res) => res.redirect("/login"));
 app.use("/", authRoutes);
 app.use("/escala", escalaRoutes);

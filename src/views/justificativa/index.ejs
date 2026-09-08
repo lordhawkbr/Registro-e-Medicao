@@ -1,30 +1,21 @@
 <div class="page-header">
   <h1>Minhas Justificativas</h1>
-  <a href="/registro-acesso" class="btn">Voltar</a>
+  <a href="/painel?tab=justificativas" class="btn">Voltar ao painel</a>
 </div>
 
-<table class="tabela">
-  <thead>
-    <tr>
-      <th>ID</th>
-      <th>Plantão</th>
-      <th>Data</th>
-      <th>Tipo</th>
-      <th>Status</th>
-    </tr>
-  </thead>
-  <tbody>
-    <% if (justificativas.length === 0) { %>
-      <tr><td colspan="5">Nenhuma justificativa enviada.</td></tr>
-    <% } %>
-    <% justificativas.forEach(j => { %>
-      <tr>
-        <td><%= j.IDJUSTIFICATIVA %></td>
-        <td>#<%= j.IDPLANTAO %></td>
-        <td><%= new Date(j.DATA).toLocaleDateString('pt-BR') %></td>
-        <td><%= j.TIPOAUSENCIA %></td>
-        <td><span class="badge badge-<%= j.STATUSAPROVACAO.toLowerCase() %>"><%= j.STATUSAPROVACAO %></span></td>
-      </tr>
-    <% }) %>
-  </tbody>
-</table>
+<% if (justificativas.length === 0) { %>
+  <p class="muted">Nenhuma justificativa enviada.</p>
+<% } %>
+
+<% justificativas.forEach(j => { %>
+  <article class="plantao-tile">
+    <div class="plantao-tile-top">
+      <div>
+        <strong>#<%= j.IDJUSTIFICATIVA %></strong>
+        <p class="muted">Plantão #<%= j.IDPLANTAO %> · <%= new Date(j.DATA).toLocaleDateString('pt-BR') %></p>
+        <p><%= j.TIPOAUSENCIA %></p>
+      </div>
+      <span class="badge badge-<%= j.STATUSAPROVACAO.toLowerCase() %>"><%= j.STATUSAPROVACAO %></span>
+    </div>
+  </article>
+<% }) %>

@@ -2,6 +2,7 @@
   <h1>Plantões</h1>
   <div style="display:flex; gap:8px;">
     <a class="btn btn-primary" href="/escala/novo">+ Novo plantão</a>
+    <a class="btn" href="/justificativa/pendentes">Justificativas</a>
     <form method="post" action="/logout"><button class="btn">Sair</button></form>
   </div>
 </div>
@@ -38,8 +39,8 @@
     <% plantoes.forEach(p => { %>
       <tr>
         <td><%= p.IDPLANTAO %></td>
-        <td><%= new Date(p.DATA).toLocaleDateString('pt-BR') %></td>
-        <td><%= p.HORAINICIO %> - <%= p.HORAFIM %></td>
+        <td><%= p.DATA_INPUT ? p.DATA_INPUT.split('-').reverse().join('/') : '' %></td>
+        <td><%= p.HORARIO_FORMATADO %></td>
         <td><%= p.CODFILIAL %></td>
         <td><%= p.CODCCUSTO %></td>
         <td><%= p.CRM_ESCALADO %></td>

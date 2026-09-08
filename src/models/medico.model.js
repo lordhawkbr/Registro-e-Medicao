@@ -10,7 +10,7 @@ async function autenticar(crm, crmUf, cpf) {
     .input("crmUf", sql.VarChar, crmUf.trim().toUpperCase())
     .query(`
       SELECT NOMECOMPLETO, CRM, UFCRM, CPF, ATIVO
-      FROM ZMDMEDICOSPJ
+      FROM Corporerm.dbo.ZMDMEDICOSPJ
       WHERE LTRIM(RTRIM(CRM)) = @crm AND LTRIM(RTRIM(UFCRM)) = @crmUf
     `);
 
@@ -24,9 +24,39 @@ async function autenticar(crm, crmUf, cpf) {
   }
 
   return {
-    crm: `${medico.CRM}${medico.UFCRM}`,
+    crm: `${String(medico.CRM).trim()}${String(medico.UFCRM).trim().toUpperCase()}`,
     nome: medico.NOMECOMPLETO.trim()
   };
 }
 
-module.exports = { autenticar };
+// Médicos ativos da filial + especialidade (para escala)
+async function listarPorFilialEspecialidade(codFilial, especialidade) {
+  const pool = await getPool();
+  const request = pool.request()
+    .input("codFilial", sql.Int, codFilial);
+
+  let whereEsp = "";
+  if (especialidade != null && String(especialidade).trim() !== "") {
+    request.input("especialidade", sql.VarChar, String(especialidade).trim());
+    whereEsp = "AND LTRIM(RTRIM(CAST(ESPECIALIDADE AS VARCHAR(200)))) = @especialidade";
+  }
+
+  const result = await request.query(`
+    SELECT CODFILIAL, NOMECOMPLETO, ESPECIALIDADE, CRM, UFCRM
+    FROM Corporerm.dbo.ZMDMEDICOSPJ
+    WHERE ATIVO = 'SIM'
+      AND CODFILIAL = @codFilial
+      ${whereEsp}
+    ORDER BY CODFILIAL, NOMECOMPLETO
+  `);
+
+  return result.recordset.map(m => ({
+    codFilial: m.CODFILIAL,
+    nomeCompleto: String(m.NOMECOMPLETO || "").trim(),
+    especialidade: m.ESPECIALIDADE,
+    crm: String(m.CRM || "").trim(),
+    ufCrm: String(m.UFCRM || "").trim().toUpperCase()
+  }));
+}
+
+module.exports = { autenticar, listarPorFilialEspecialidade };

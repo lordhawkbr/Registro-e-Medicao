@@ -2,17 +2,25 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Escala Médica</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,600;0,9..40,700;1,9..40,400&family=Fraunces:opsz,wght@9..144,600;9..144,700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/style.css">
 </head>
-<body>
-  <header class="topbar">
-    <strong>Escala Médica</strong>
-    <nav>
-      <a href="/escala">Plantões</a>
-    </nav>
-  </header>
-  <main class="container">
+<body class="<%= typeof bodyClass !== 'undefined' ? bodyClass : (typeof sessionTipo !== 'undefined' && sessionTipo === 'MEDICO' ? 'body-medico' : 'body-admin') %>">
+  <% const isMedico = typeof sessionTipo !== 'undefined' && sessionTipo === 'MEDICO'; %>
+  <% if (!isMedico) { %>
+    <header class="topbar">
+      <strong>Escala Médica</strong>
+      <nav>
+        <a href="/escala">Plantões</a>
+        <a href="/justificativa/pendentes">Justificativas</a>
+      </nav>
+    </header>
+  <% } %>
+  <main class="container <%= isMedico ? 'container-medico' : '' %>">
     <%- body %>
   </main>
 </body>

@@ -1,47 +1,83 @@
-<div class="page-header">
-  <h1>Registro de Acesso</h1>
-  <form method="post" action="/logout"><button class="btn">Sair</button></form>
-</div>
-
-<% if (typeof erro !== "undefined" && erro === "fora_da_janela") { %>
-  <div class="alert alert-danger">
-    Fora do horário permitido para registrar este plantão (tolerância de <%= tolerancia %> minutos).
-    Se você realmente cumpriu o plantão, abra uma <a href="/justificativa/novo?idPlantao=<%= typeof plantaoErro !== 'undefined' ? plantaoErro : '' %>">Justificativa de Ausência de Registro</a>.
-  </div>
-<% } %>
-
-<% if (plantoes.length === 0) { %>
-  <p>Nenhum plantão seu está ativo hoje.</p>
-<% } %>
-
-<% plantoes.forEach(({ plantao, registros, avaliacao }) => { %>
-  <div class="card-plantao">
+<div class="medico-shell">
+  <header class="medico-header">
     <div>
-      <strong>Plantão #<%= plantao.IDPLANTAO %></strong> —
-      <%= plantao.HORAINICIO %> às <%= plantao.HORAFIM %> —
-      Filial <%= plantao.CODFILIAL %> / Setor <%= plantao.CODCCUSTO %>
-      <span class="badge badge-<%= plantao.STATUS.toLowerCase() %>"><%= plantao.STATUS %></span>
+      <p class="medico-eyebrow">Registro de acesso</p>
+      <h1><%= typeof nome !== 'undefined' && nome ? nome : 'Médico' %></h1>
     </div>
+    <div class="medico-header-actions">
+      <a class="btn btn-ghost" href="/painel">Painel</a>
+      <form method="post" action="/logout"><button class="btn btn-ghost" type="submit">Sair</button></form>
+    </div>
+  </header>
 
-    <ul class="lista-registros">
-      <% registros.forEach(r => { %>
-        <li><%= r.TIPO %> às <%= r.HORABATIDA %></li>
-      <% }) %>
-    </ul>
+  <form method="get" class="acesso-data">
+    <label>
+      Dia
+      <input type="date" name="data" value="<%= data %>" onchange="this.form.submit()">
+    </label>
+  </form>
 
-    <% if (plantao.STATUS !== "CONCLUIDO") { %>
-      <form method="post" action="/registro-acesso/<%= plantao.IDPLANTAO %>/bater">
-        <% if (avaliacao.dentroDaJanela) { %>
-          <button type="submit" class="btn btn-primary">
-            Registrar <%= avaliacao.proximoTipo %>
-          </button>
+  <% if (typeof erro !== "undefined" && erro === "fora_da_janela") { %>
+    <div class="alert alert-danger">
+      Fora do horário permitido para registrar este plantão (tolerância de <%= tolerancia %> minutos).
+      <% if (typeof plantaoErro !== 'undefined' && plantaoErro) { %>
+        <% const itemErro = plantoes.find(p => String(p.plantao.IDPLANTAO) === String(plantaoErro)); %>
+        <% if (itemErro && itemErro.avaliacao.podeJustificar) { %>
+          Se você realmente cumpriu o plantão, abra uma
+          <a href="/justificativa/novo?idPlantao=<%= plantaoErro %>">justificativa</a>.
         <% } else { %>
-          <button type="button" class="btn" disabled>
-            <%= avaliacao.proximoTipo %> fora da janela (<%= avaliacao.diffMin %>min de diferença)
-          </button>
-          <a class="btn" href="/justificativa/novo?idPlantao=<%= plantao.IDPLANTAO %>">Abrir justificativa</a>
+          Aguarde a janela de tolerância ou volte mais perto do horário.
         <% } %>
-      </form>
-    <% } %>
-  </div>
-<% }) %>
+      <% } %>
+    </div>
+  <% } %>
+
+  <% if (plantoes.length === 0) { %>
+    <p class="muted">Nenhum plantão ativo neste dia.</p>
+  <% } %>
+
+  <% plantoes.forEach(({ plantao, registros, avaliacao }) => { %>
+    <article class="plantao-tile">
+      <div class="plantao-tile-top">
+        <div>
+          <strong>Plantão #<%= plantao.IDPLANTAO %></strong>
+          <p class="plantao-horario"><%= plantao.HORARIO_FORMATADO %></p>
+          <p class="muted">Filial <%= plantao.CODFILIAL %> · Setor <%= plantao.CODCCUSTO %></p>
+        </div>
+        <span class="badge badge-<%= plantao.STATUS.toLowerCase() %>"><%= plantao.STATUS %></span>
+      </div>
+
+      <ul class="lista-registros">
+        <% if (registros.length === 0) { %>
+          <li>Sem batidas ainda</li>
+        <% } %>
+        <% registros.forEach(r => { %>
+          <li><%= r.TIPO %> às <%= r.HORABATIDA_FMT || r.HORABATIDA %></li>
+        <% }) %>
+      </ul>
+
+      <% if (plantao.STATUS !== "CONCLUIDO" && plantao.STATUS !== "CANCELADO") { %>
+        <div class="plantao-actions">
+          <% if (avaliacao.podeIniciar) { %>
+            <form method="post" action="/registro-acesso/<%= plantao.IDPLANTAO %>/bater">
+              <button type="submit" class="btn btn-primary btn-block">
+                Registrar <%= avaliacao.proximoTipo %>
+              </button>
+            </form>
+          <% } else { %>
+            <button type="button" class="btn btn-block" disabled>
+              <% if (avaliacao.antesDaJanela) { %>
+                <%= avaliacao.proximoTipo %> ainda não liberado (~<%= avaliacao.diffMin %> min)
+              <% } else { %>
+                <%= avaliacao.proximoTipo %> fora da janela (+<%= avaliacao.diffMin %> min)
+              <% } %>
+            </button>
+            <% if (avaliacao.podeJustificar) { %>
+              <a class="btn btn-block btn-warn" href="/justificativa/novo?idPlantao=<%= plantao.IDPLANTAO %>">Abrir justificativa</a>
+            <% } %>
+          <% } %>
+        </div>
+      <% } %>
+    </article>
+  <% }) %>
+</div>
