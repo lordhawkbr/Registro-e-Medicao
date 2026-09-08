@@ -1,3 +1,24 @@
+<%
+  const filiaisSel = (filtros.codFiliais || []).map(String);
+  const statusSel = filtros.statuses || [];
+  const statusOpcoes = [
+    ["ABERTO", "Aberto"],
+    ["EM_ANDAMENTO", "Em andamento"],
+    ["CONCLUIDO", "Concluído"],
+    ["CANCELADO", "Cancelado"],
+    ["PENDENTE_JUSTIFICATIVA", "Justificativa pendente"]
+  ];
+  const labelFiliais = !filiaisSel.length
+    ? "Todas as filiais"
+    : (filiaisSel.length === 1
+      ? (filiais.find(f => String(f.codFilial) === filiaisSel[0]) || {}).nome || ("Filial " + filiaisSel[0])
+      : filiaisSel.length + " filiais");
+  const labelStatus = !statusSel.length
+    ? "Todos os status"
+    : (statusSel.length === 1
+      ? (statusOpcoes.find(([v]) => v === statusSel[0]) || [statusSel[0], statusSel[0]])[1]
+      : statusSel.length + " status");
+%>
 <div class="page-escala-lista">
   <div class="page-header">
     <h1>Plantões</h1>
@@ -7,7 +28,7 @@
     </div>
   </div>
 
-  <form method="get" class="filtros filtros-card filtros-multi">
+  <form method="get" class="filtros filtros-card filtros-multi" id="formFiltrosEscala">
     <label>
       Data início
       <input type="date" name="dataInicio" value="<%= filtros.dataInicio || '' %>">
@@ -16,32 +37,53 @@
       Data fim
       <input type="date" name="dataFim" value="<%= filtros.dataFim || '' %>">
     </label>
-    <label>
-      Filiais
-      <select name="codFilial" multiple size="4" class="select-multi">
-        <% filiais.forEach(f => { %>
-          <option value="<%= f.codFilial %>" <%= (filtros.codFiliais || []).map(String).includes(String(f.codFilial)) ? 'selected' : '' %>>
-            <%= f.nome %>
-          </option>
-        <% }) %>
-      </select>
-      <span class="filtro-hint">Ctrl/Cmd para várias</span>
-    </label>
-    <label>
-      Status
-      <select name="status" multiple size="5" class="select-multi">
-        <% [
-          ["ABERTO","Aberto"],
-          ["EM_ANDAMENTO","Em andamento"],
-          ["CONCLUIDO","Concluído"],
-          ["CANCELADO","Cancelado"],
-          ["PENDENTE_JUSTIFICATIVA","Justificativa pendente"]
-        ].forEach(([v,l]) => { %>
-          <option value="<%= v %>" <%= (filtros.statuses || []).includes(v) ? "selected" : "" %>><%= l %></option>
-        <% }) %>
-      </select>
-      <span class="filtro-hint">Ctrl/Cmd para vários</span>
-    </label>
+
+    <div class="filtro-campo">
+      <span class="filtro-label">Filiais</span>
+      <div class="msel" data-msel>
+        <button type="button" class="msel-toggle" aria-haspopup="listbox" aria-expanded="false">
+          <span class="msel-toggle-text"><%= labelFiliais %></span>
+          <span class="msel-caret" aria-hidden="true">▾</span>
+        </button>
+        <div class="msel-panel" hidden>
+          <label class="msel-option msel-all">
+            <input type="checkbox" data-msel-all <%= filiaisSel.length === 0 ? "checked" : "" %>>
+            <span>Todas</span>
+          </label>
+          <% filiais.forEach(f => { %>
+            <label class="msel-option">
+              <input type="checkbox" name="codFilial" value="<%= f.codFilial %>"
+                <%= filiaisSel.includes(String(f.codFilial)) ? "checked" : "" %>>
+              <span><%= f.nome %></span>
+            </label>
+          <% }) %>
+        </div>
+      </div>
+    </div>
+
+    <div class="filtro-campo">
+      <span class="filtro-label">Status</span>
+      <div class="msel" data-msel>
+        <button type="button" class="msel-toggle" aria-haspopup="listbox" aria-expanded="false">
+          <span class="msel-toggle-text"><%= labelStatus %></span>
+          <span class="msel-caret" aria-hidden="true">▾</span>
+        </button>
+        <div class="msel-panel" hidden>
+          <label class="msel-option msel-all">
+            <input type="checkbox" data-msel-all <%= statusSel.length === 0 ? "checked" : "" %>>
+            <span>Todos</span>
+          </label>
+          <% statusOpcoes.forEach(([v, l]) => { %>
+            <label class="msel-option">
+              <input type="checkbox" name="status" value="<%= v %>"
+                <%= statusSel.includes(v) ? "checked" : "" %>>
+              <span><%= l %></span>
+            </label>
+          <% }) %>
+        </div>
+      </div>
+    </div>
+
     <div class="filtros-actions">
       <button type="submit" class="btn btn-primary">Filtrar</button>
       <a class="btn" href="/escala">Limpar</a>
@@ -79,27 +121,30 @@
                   <div class="cell-medico">
                     <div class="cell-nome"><%= m.nome %></div>
                     <div class="muted"><%= m.crm %></div>
-                    <% if (m.CONCLUSAO && p.MEDICOS.length > 1) { %>
-                      <span class="tag tag-sm tag-<%= m.CONCLUSAO.classe %>"><%= m.CONCLUSAO.label %></span>
-                    <% } %>
                   </div>
                 <% }) %>
               <% } else if (p.MEDICO_NOME) { %>
-                <div class="cell-nome"><%= p.MEDICO_NOME %></div>
-                <div class="muted"><%= p.CRM_ESCALADO %></div>
+                <div class="cell-medico">
+                  <div class="cell-nome"><%= p.MEDICO_NOME %></div>
+                  <div class="muted"><%= p.CRM_ESCALADO %></div>
+                </div>
               <% } else { %>
-                <%= p.CRM_ESCALADO %>
+                <div class="cell-medico"><%= p.CRM_ESCALADO %></div>
               <% } %>
             </td>
             <td class="col-conclusao">
-              <% if (p.MEDICOS && p.MEDICOS.length > 1) { %>
-                <div class="conclusoes-stack">
-                  <% p.MEDICOS.forEach(m => { %>
-                    <span class="tag tag-sm tag-<%= m.CONCLUSAO.classe %>" title="<%= m.nome %>"><%= m.CONCLUSAO.label %></span>
-                  <% }) %>
-                </div>
+              <% if (p.MEDICOS && p.MEDICOS.length) { %>
+                <% p.MEDICOS.forEach(m => { %>
+                  <div class="cell-conclusao" title="<%= m.nome %>">
+                    <span class="tag tag-<%= (m.CONCLUSAO || p.CONCLUSAO).classe %>">
+                      <%= (m.CONCLUSAO || p.CONCLUSAO).label %>
+                    </span>
+                  </div>
+                <% }) %>
               <% } else { %>
-                <span class="tag tag-<%= p.CONCLUSAO.classe %>"><%= p.CONCLUSAO.label %></span>
+                <div class="cell-conclusao">
+                  <span class="tag tag-<%= p.CONCLUSAO.classe %>"><%= p.CONCLUSAO.label %></span>
+                </div>
               <% } %>
             </td>
             <td class="col-acoes">
@@ -127,3 +172,84 @@
     </table>
   </div>
 </div>
+
+<script>
+(function () {
+  function atualizarRotulo(msel) {
+    const toggleText = msel.querySelector(".msel-toggle-text");
+    const all = msel.querySelector("[data-msel-all]");
+    const items = Array.from(msel.querySelectorAll('input[type="checkbox"]:not([data-msel-all])'));
+    const checked = items.filter(i => i.checked);
+    const placeholderTodas = all ? (all.closest("label").querySelector("span")?.textContent || "Todas") : "Todas";
+
+    if (!checked.length) {
+      toggleText.textContent = placeholderTodas === "Todos" ? "Todos os status" : "Todas as filiais";
+      if (all) all.checked = true;
+      return;
+    }
+    if (all) all.checked = false;
+    if (checked.length === 1) {
+      const span = checked[0].closest("label")?.querySelector("span");
+      toggleText.textContent = span ? span.textContent : "1 selecionado";
+      return;
+    }
+    const unidade = items[0]?.name === "status" ? "status" : "filiais";
+    toggleText.textContent = checked.length + " " + unidade;
+  }
+
+  function fecharTodos(exceto) {
+    document.querySelectorAll("[data-msel].is-open").forEach(el => {
+      if (el === exceto) return;
+      el.classList.remove("is-open");
+      const panel = el.querySelector(".msel-panel");
+      const btn = el.querySelector(".msel-toggle");
+      if (panel) panel.hidden = true;
+      if (btn) btn.setAttribute("aria-expanded", "false");
+    });
+  }
+
+  document.querySelectorAll("[data-msel]").forEach(msel => {
+    const btn = msel.querySelector(".msel-toggle");
+    const panel = msel.querySelector(".msel-panel");
+    const all = msel.querySelector("[data-msel-all]");
+    const items = Array.from(msel.querySelectorAll('input[type="checkbox"]:not([data-msel-all])'));
+
+    btn.addEventListener("click", (e) => {
+      e.preventDefault();
+      const aberto = msel.classList.contains("is-open");
+      fecharTodos();
+      if (!aberto) {
+        msel.classList.add("is-open");
+        panel.hidden = false;
+        btn.setAttribute("aria-expanded", "true");
+      }
+    });
+
+    if (all) {
+      all.addEventListener("change", () => {
+        if (all.checked) items.forEach(i => { i.checked = false; });
+        atualizarRotulo(msel);
+      });
+    }
+
+    items.forEach(item => {
+      item.addEventListener("change", () => {
+        if (item.checked && all) all.checked = false;
+        if (!items.some(i => i.checked) && all) all.checked = true;
+        atualizarRotulo(msel);
+      });
+    });
+
+    atualizarRotulo(msel);
+  });
+
+  document.addEventListener("click", (e) => {
+    if (e.target.closest("[data-msel]")) return;
+    fecharTodos();
+  });
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") fecharTodos();
+  });
+})();
+</script>
