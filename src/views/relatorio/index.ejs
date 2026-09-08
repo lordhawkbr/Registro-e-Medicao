@@ -91,11 +91,11 @@
   </form>
 
   <div class="relatorio-resumo" aria-label="Resumo do relatório">
-    <span><strong><%= resumo.plantoes %></strong> plantão(ões)</span>
-    <span><strong><%= resumo.registrosDentroPrazo %></strong> dentro do prazo</span>
-    <span><strong><%= resumo.registrosForaPrazo %></strong> fora do prazo</span>
-    <span><strong><%= resumo.justificativas %></strong> justificativa(s)</span>
-    <span><strong><%= resumo.semAcao %></strong> sem ação</span>
+    <span class="tag tag-pendente_entrada"><%= resumo.plantoes %> plantão(ões)</span>
+    <span class="tag tag-registrado"><%= resumo.registrosDentroPrazo %> dentro do prazo</span>
+    <span class="tag tag-pendente_saida"><%= resumo.registrosForaPrazo %> fora do prazo</span>
+    <span class="tag tag-justificado"><%= resumo.justificativas %> justificativa(s)</span>
+    <span class="tag tag-cancelado"><%= resumo.semAcao %> sem ação</span>
   </div>
 
   <div class="tabela-scroll">
