@@ -95,6 +95,7 @@
                     Editar
                   </a>
                   <form method="post" action="/escala/<%= p.IDPLANTAO %>?_method=DELETE" onsubmit="return confirm('Cancelar este plantão?')">
+                    <input type="hidden" name="_method" value="DELETE">
                     <button type="submit" class="btn-acao btn-cancelar" title="Cancelar">
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
                       Cancelar

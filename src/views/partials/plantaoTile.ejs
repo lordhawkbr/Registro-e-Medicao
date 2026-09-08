@@ -1,9 +1,32 @@
+<%
+  const proximoTipo = avaliacao && avaliacao.proximoTipo ? avaliacao.proximoTipo : null;
+  const concluido = plantao.STATUS === "CANCELADO"
+    || plantao.STATUS === "CONCLUIDO"
+    || (avaliacao && avaliacao.concluidoParaMedico);
+  const horaProxima = proximoTipo === "SAIDA"
+    ? (plantao.HORAFIM_INPUT || "")
+    : (plantao.HORAINICIO_INPUT || "");
+  const tituloAcao = concluido
+    ? null
+    : (proximoTipo && horaProxima ? `${proximoTipo} às ${horaProxima}` : null);
+  const especialidade = plantao.ESPECIALIDADE_NOME || plantao.IDESPECIALIDADE || "";
+%>
 <article class="plantao-tile <%= typeof compacto !== 'undefined' && compacto ? 'plantao-tile-compact' : '' %>">
   <div class="plantao-tile-top">
     <div>
-      <strong>Plantão #<%= plantao.IDPLANTAO %></strong>
+      <h3 class="plantao-titulo">
+        Plantão #<%= plantao.IDPLANTAO %><% if (tituloAcao) { %> —
+        <span class="plantao-titulo-hora"><%= tituloAcao %></span><% } %>
+      </h3>
       <p class="plantao-horario"><%= plantao.HORARIO_FORMATADO %></p>
-      <p class="muted">Filial <%= plantao.CODFILIAL %> · <%= plantao.SETOR_NOME %></p>
+      <p class="plantao-meta">
+        <strong>Filial <%= plantao.CODFILIAL %></strong>
+        <% if (especialidade) { %>
+          · <strong>Especialidade <%= especialidade %></strong>
+        <% } else if (plantao.SETOR_NOME) { %>
+          · <%= plantao.SETOR_NOME %>
+        <% } %>
+      </p>
       <% if (!(typeof compacto !== 'undefined' && compacto) && plantao.TIPO_NOME) { %>
         <p class="muted"><%= plantao.TIPO_NOME %></p>
       <% } %>
@@ -22,7 +45,7 @@
   <% } %>
 
   <div class="plantao-actions <%= typeof compacto !== 'undefined' && compacto ? 'plantao-actions-compact' : '' %>">
-    <% if (plantao.STATUS === "CANCELADO" || (avaliacao && avaliacao.concluidoParaMedico) || plantao.STATUS === "CONCLUIDO") { %>
+    <% if (concluido) { %>
       <span class="muted">Sem ações disponíveis</span>
     <% } else if (avaliacao.podeIniciar) { %>
       <form method="post" action="/registro-acesso/<%= plantao.IDPLANTAO %>/bater">

@@ -1,4 +1,4 @@
-const { sql, getPool } = require("../config/db");
+const { sql, getPool, ensureEscalaSchema } = require("../config/db");
 const {
   extrairHoraMinuto,
   formatarPeriodoPlantao,
@@ -19,6 +19,7 @@ const SELECT_PLANTAO_ENRIQUECIDO = `
     t.DESCRICAO AS TIPO_DESCRICAO,
     t.TURNO AS TIPO_TURNO,
     t.TIPO AS TIPO_TURNO_TIPO,
+    t.ESPECIALIDADE AS ESPECIALIDADE_TIPO,
     (
       SELECT COUNT(*) FROM REGISTROACESSO r WHERE r.IDPLANTAO = e.IDPLANTAO
     ) AS QTD_REGISTROS,
@@ -35,10 +36,17 @@ const SELECT_PLANTAO_ENRIQUECIDO = `
   LEFT JOIN ZMDTIPOPLANTAOMEDICO2 t ON t.ID = e.CODTIPOPLANTAO
 `;
 
+function statusAtivo(status) {
+  return String(status || "").trim().toUpperCase() !== "CANCELADO";
+}
+
 function normalizarPlantao(row) {
   if (!row) return row;
   const conclusao = statusConclusao(row);
   const crmLista = parseCrmLista(row.CRM_ESCALADO);
+  const especialidade = row.ESPECIALIDADE_TIPO != null && String(row.ESPECIALIDADE_TIPO).trim() !== ""
+    ? String(row.ESPECIALIDADE_TIPO).trim()
+    : (row.IDESPECIALIDADE != null ? String(row.IDESPECIALIDADE) : "");
   return {
     ...row,
     DATA_INPUT: formatarDataInput(row.DATA),
@@ -48,6 +56,7 @@ function normalizarPlantao(row) {
     HORARIO_CURTO: `${formatarHoraCurta(row.HORAINICIO)} – ${formatarHoraCurta(row.HORAFIM)}`,
     FILIAL_NOME: limparNomeFilial(row.FILIAL_NOME_RAW) || String(row.CODFILIAL),
     SETOR_NOME: row.SETOR_NOME || row.CODCCUSTO,
+    ESPECIALIDADE_NOME: especialidade,
     TIPO_NOME: row.TIPO_DESCRICAO
       ? `${row.TIPO_DESCRICAO}${row.TIPO_TURNO ? ` (${row.TIPO_TURNO}${row.TIPO_TURNO_TIPO ? "/" + row.TIPO_TURNO_TIPO : ""})` : ""}`
       : (row.CODTIPOPLANTAO != null ? `Tipo #${row.CODTIPOPLANTAO}` : ""),
@@ -152,27 +161,62 @@ async function criar(dados, usuario) {
     throw new Error("Filial inválida para gravação do plantão.");
   }
 
-  const result = await pool.request()
-    .input("codFilial", sql.Int, codFilial)
-    .input("codCCusto", sql.VarChar, dados.codCCusto)
-    .input("data", sql.Date, dados.data)
-    .input("horaInicio", sql.VarChar, dados.horaInicio)
-    .input("horaFim", sql.VarChar, dados.horaFim)
-    .input("idEspecialidade", sql.Int, parseIdEspecialidade(dados.idEspecialidade || dados.especialidade))
-    .input("codTipoPlantao", sql.Int, dados.codTipoPlantao)
-    .input("crmEscalado", sql.VarChar(100), crmEscalado)
-    .input("dataExpiracao", sql.DateTime, dataExpiracao)
-    .input("criadoPor", sql.VarChar, usuario)
-    .query(`
-      INSERT INTO ESCALAMEDICA
-        (CODFILIAL, EMPRESA, CODCCUSTO, DATA, HORAINICIO, HORAFIM,
-         IDESPECIALIDADE, CODTIPOPLANTAO, CRM_ESCALADO, STATUS, DATAEXPIRACAO, RECCREATEDBY)
-      OUTPUT INSERTED.IDPLANTAO
-      VALUES
-        (@codFilial, @codFilial, @codCCusto, @data, @horaInicio, @horaFim,
-         @idEspecialidade, @codTipoPlantao, @crmEscalado, 'ABERTO', @dataExpiracao, @criadoPor)
-    `);
-  return result.recordset[0].IDPLANTAO;
+  try {
+    const result = await pool.request()
+      .input("codFilial", sql.Int, codFilial)
+      .input("codCCusto", sql.VarChar, dados.codCCusto)
+      .input("data", sql.Date, dados.data)
+      .input("horaInicio", sql.VarChar, dados.horaInicio)
+      .input("horaFim", sql.VarChar, dados.horaFim)
+      .input("idEspecialidade", sql.Int, parseIdEspecialidade(dados.idEspecialidade || dados.especialidade))
+      .input("codTipoPlantao", sql.Int, dados.codTipoPlantao)
+      .input("crmEscalado", sql.VarChar(200), crmEscalado)
+      .input("dataExpiracao", sql.DateTime, dataExpiracao)
+      .input("criadoPor", sql.VarChar, usuario)
+      .query(`
+        INSERT INTO ESCALAMEDICA
+          (CODFILIAL, EMPRESA, CODCCUSTO, DATA, HORAINICIO, HORAFIM,
+           IDESPECIALIDADE, CODTIPOPLANTAO, CRM_ESCALADO, STATUS, DATAEXPIRACAO, RECCREATEDBY)
+        OUTPUT INSERTED.IDPLANTAO
+        VALUES
+          (@codFilial, @codFilial, @codCCusto, @data, @horaInicio, @horaFim,
+           @idEspecialidade, @codTipoPlantao, @crmEscalado, 'ABERTO', @dataExpiracao, @criadoPor)
+      `);
+    return result.recordset[0].IDPLANTAO;
+  } catch (err) {
+    if (/truncated/i.test(err.message || "")) {
+      try {
+        await ensureEscalaSchema(pool);
+        const result = await pool.request()
+          .input("codFilial", sql.Int, codFilial)
+          .input("codCCusto", sql.VarChar, dados.codCCusto)
+          .input("data", sql.Date, dados.data)
+          .input("horaInicio", sql.VarChar, dados.horaInicio)
+          .input("horaFim", sql.VarChar, dados.horaFim)
+          .input("idEspecialidade", sql.Int, parseIdEspecialidade(dados.idEspecialidade || dados.especialidade))
+          .input("codTipoPlantao", sql.Int, dados.codTipoPlantao)
+          .input("crmEscalado", sql.VarChar(200), crmEscalado)
+          .input("dataExpiracao", sql.DateTime, dataExpiracao)
+          .input("criadoPor", sql.VarChar, usuario)
+          .query(`
+            INSERT INTO ESCALAMEDICA
+              (CODFILIAL, EMPRESA, CODCCUSTO, DATA, HORAINICIO, HORAFIM,
+               IDESPECIALIDADE, CODTIPOPLANTAO, CRM_ESCALADO, STATUS, DATAEXPIRACAO, RECCREATEDBY)
+            OUTPUT INSERTED.IDPLANTAO
+            VALUES
+              (@codFilial, @codFilial, @codCCusto, @data, @horaInicio, @horaFim,
+               @idEspecialidade, @codTipoPlantao, @crmEscalado, 'ABERTO', @dataExpiracao, @criadoPor)
+          `);
+        return result.recordset[0].IDPLANTAO;
+      } catch (err2) {
+        throw new Error(
+          "Falha ao gravar os médicos do plantão (coluna CRM_ESCALADO curta demais). " +
+          "Execute sql/migrate_crm_multi.sql no banco."
+        );
+      }
+    }
+    throw err;
+  }
 }
 
 async function atualizar(idPlantao, dados) {
@@ -207,7 +251,7 @@ async function atualizar(idPlantao, dados) {
     .input("horaFim", sql.VarChar, dados.horaFim)
     .input("idEspecialidade", sql.Int, parseIdEspecialidade(dados.idEspecialidade || dados.especialidade))
     .input("codTipoPlantao", sql.Int, dados.codTipoPlantao)
-    .input("crmEscalado", sql.VarChar(100), crmEscalado)
+    .input("crmEscalado", sql.VarChar(200), crmEscalado)
     .input("dataExpiracao", sql.DateTime, dataExpiracao)
     .query(`
       UPDATE ESCALAMEDICA SET
@@ -232,7 +276,7 @@ async function buscarConflitosHorario({ crmEscalado, data, horaInicio, horaFim, 
   }
 
   const orCrm = crms.map((crm, i) => {
-    request.input(`crm${i}`, sql.VarChar, crm);
+    request.input(`crm${i}`, sql.VarChar(200), crm);
     return `(
       e.CRM_ESCALADO = @crm${i}
       OR e.CRM_ESCALADO LIKE @crm${i} + '|%'
@@ -245,14 +289,14 @@ async function buscarConflitosHorario({ crmEscalado, data, horaInicio, horaFim, 
     SELECT e.IDPLANTAO, e.DATA, e.HORAINICIO, e.HORAFIM, e.STATUS, e.CODFILIAL, e.CODCCUSTO, e.CRM_ESCALADO
     FROM ESCALAMEDICA e
     WHERE (${orCrm})
-      AND e.STATUS <> 'CANCELADO'
+      AND UPPER(LTRIM(RTRIM(ISNULL(e.STATUS, '')))) <> 'CANCELADO'
       AND CAST(e.DATA AS DATE) BETWEEN DATEADD(day, -1, @data) AND DATEADD(day, 1, @data)
       ${whereExtra}
   `);
 
-  return result.recordset.filter(p =>
-    horariosSobrepostos(data, horaInicio, horaFim, p.DATA, p.HORAINICIO, p.HORAFIM)
-  );
+  return result.recordset
+    .filter(p => statusAtivo(p.STATUS))
+    .filter(p => horariosSobrepostos(data, horaInicio, horaFim, p.DATA, p.HORAINICIO, p.HORAFIM));
 }
 
 async function garantirSemConflito(opts) {
@@ -284,9 +328,17 @@ async function cancelar(idPlantao) {
   }
 
   const pool = await getPool();
-  await pool.request()
+  const result = await pool.request()
     .input("id", sql.Int, idPlantao)
-    .query("UPDATE ESCALAMEDICA SET STATUS = 'CANCELADO' WHERE IDPLANTAO = @id");
+    .query(`
+      UPDATE ESCALAMEDICA
+      SET STATUS = 'CANCELADO'
+      WHERE IDPLANTAO = @id
+        AND UPPER(LTRIM(RTRIM(ISNULL(STATUS, '')))) <> 'CANCELADO'
+    `);
+  if (!result.rowsAffected || !result.rowsAffected[0]) {
+    throw new Error("Não foi possível cancelar o plantão.");
+  }
 }
 
 function calcularDataExpiracao(data, horaFim) {

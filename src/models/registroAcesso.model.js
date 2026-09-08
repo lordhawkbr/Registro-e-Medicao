@@ -18,6 +18,7 @@ const SELECT_PLANTAO_ENRIQUECIDO = `
     f.NOMEFANTASIA AS FILIAL_NOME_RAW,
     c.NOME AS SETOR_NOME,
     t.DESCRICAO AS TIPO_DESCRICAO,
+    t.ESPECIALIDADE AS ESPECIALIDADE_TIPO,
     (
       SELECT COUNT(*) FROM REGISTROACESSO r WHERE r.IDPLANTAO = e.IDPLANTAO
     ) AS QTD_REGISTROS,
@@ -37,6 +38,9 @@ const SELECT_PLANTAO_ENRIQUECIDO = `
 function normalizarPlantao(row) {
   if (!row) return row;
   const crmLista = parseCrmLista(row.CRM_ESCALADO);
+  const especialidade = row.ESPECIALIDADE_TIPO != null && String(row.ESPECIALIDADE_TIPO).trim() !== ""
+    ? String(row.ESPECIALIDADE_TIPO).trim()
+    : (row.IDESPECIALIDADE != null ? String(row.IDESPECIALIDADE) : "");
   return {
     ...row,
     DATA_INPUT: formatarDataInput(row.DATA),
@@ -46,6 +50,7 @@ function normalizarPlantao(row) {
     DATA_CHAVE: chaveData(row.DATA),
     FILIAL_NOME: limparNomeFilial(row.FILIAL_NOME_RAW) || String(row.CODFILIAL),
     SETOR_NOME: row.SETOR_NOME || row.CODCCUSTO,
+    ESPECIALIDADE_NOME: especialidade,
     TIPO_NOME: row.TIPO_DESCRICAO || (row.CODTIPOPLANTAO != null ? `Tipo #${row.CODTIPOPLANTAO}` : ""),
     CRM_LISTA: crmLista,
     CONCLUSAO: statusConclusao(row)
