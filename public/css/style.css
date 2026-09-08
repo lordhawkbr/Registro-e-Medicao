@@ -56,6 +56,48 @@ body.body-medico {
   padding: 0 16px 40px;
 }
 
+body.body-admin {
+  height: 100vh;
+  overflow: hidden;
+}
+
+body.body-admin .container {
+  height: calc(100vh - 52px);
+  margin-top: 0;
+  margin-bottom: 0;
+  padding-top: 16px;
+  padding-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+body.body-admin .page-header,
+body.body-admin .filtros-card {
+  flex-shrink: 0;
+}
+
+.tabela-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  background: var(--surface);
+}
+
+.tabela-scroll .tabela {
+  box-shadow: none;
+  border-radius: 0;
+}
+
+.tabela-scroll thead th {
+  position: sticky;
+  top: 0;
+  background: #f3f7f5;
+  z-index: 1;
+}
+
 .container-medico {
   max-width: 480px;
   margin: 0 auto;
@@ -203,6 +245,13 @@ h1, h2 {
 
 .form-escala .span-2 { grid-column: span 2; }
 .form-escala .span-3 { grid-column: 1 / -1; }
+
+.form-row-horario {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px 12px;
+}
 
 .form-escala input,
 .form-escala select {
@@ -458,6 +507,51 @@ h1, h2 {
   border: 1px solid var(--line);
 }
 
+.medico-tabs-3 {
+  grid-template-columns: 1fr 1fr 1fr;
+}
+
+.btn-voltar-painel {
+  font-size: 15px;
+  padding: 12px 14px;
+  box-shadow: 0 8px 20px rgba(15, 107, 76, 0.22);
+}
+
+.plantao-lista-compacta {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.plantao-tile-compact {
+  padding: 10px 12px;
+  margin-bottom: 0;
+}
+
+.plantao-tile-compact .plantao-horario {
+  font-size: 13px;
+  margin: 2px 0;
+}
+
+.lista-registros-compact {
+  margin: 6px 0;
+  font-size: 12px;
+}
+
+.plantao-actions-compact {
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.plantao-actions-compact .btn {
+  flex: 1 1 auto;
+  min-width: 120px;
+  padding: 8px 10px;
+  font-size: 13px;
+}
+
 .medico-tab {
   text-align: center;
   text-decoration: none;
@@ -606,7 +700,24 @@ h1, h2 {
   .form-escala { grid-template-columns: 1fr; }
   .form-escala .span-2,
   .form-escala .span-3 { grid-column: 1 / -1; }
+  .form-row-horario { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+  .form-row-horario label { font-size: 12px; }
   .filtros-card { grid-template-columns: 1fr; }
   .tabela { display: block; overflow-x: auto; }
   .page-header { align-items: flex-start; }
+  body.body-admin { height: auto; overflow: auto; }
+  body.body-admin .container {
+    height: auto;
+    overflow: visible;
+  }
+  .tabela-scroll {
+    max-height: 65vh;
+  }
+  .medico-tabs-3 {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (min-width: 721px) and (max-width: 900px) {
+  .form-row-horario { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }

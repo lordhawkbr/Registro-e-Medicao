@@ -1,0 +1,48 @@
+<article class="plantao-tile <%= typeof compacto !== 'undefined' && compacto ? 'plantao-tile-compact' : '' %>">
+  <div class="plantao-tile-top">
+    <div>
+      <strong>Plantão #<%= plantao.IDPLANTAO %></strong>
+      <p class="plantao-horario"><%= plantao.HORARIO_FORMATADO %></p>
+      <p class="muted"><%= plantao.FILIAL_NOME %> · <%= plantao.SETOR_NOME %></p>
+      <% if (!(typeof compacto !== 'undefined' && compacto) && plantao.TIPO_NOME) { %>
+        <p class="muted"><%= plantao.TIPO_NOME %></p>
+      <% } %>
+    </div>
+    <div class="plantao-badges">
+      <span class="badge badge-<%= plantao.CONCLUSAO.classe %>"><%= plantao.CONCLUSAO.label %></span>
+    </div>
+  </div>
+
+  <% if (registros.length) { %>
+    <ul class="lista-registros <%= typeof compacto !== 'undefined' && compacto ? 'lista-registros-compact' : '' %>">
+      <% registros.forEach(r => { %>
+        <li><%= r.TIPO %> às <%= r.HORABATIDA_FMT || r.HORABATIDA %></li>
+      <% }) %>
+    </ul>
+  <% } %>
+
+  <div class="plantao-actions <%= typeof compacto !== 'undefined' && compacto ? 'plantao-actions-compact' : '' %>">
+    <% if (plantao.STATUS === "CONCLUIDO" || plantao.STATUS === "CANCELADO") { %>
+      <span class="muted">Sem ações disponíveis</span>
+    <% } else if (avaliacao.podeIniciar) { %>
+      <form method="post" action="/registro-acesso/<%= plantao.IDPLANTAO %>/bater">
+        <button type="submit" class="btn btn-primary <%= typeof compacto !== 'undefined' && compacto ? '' : 'btn-block' %>">
+          Registrar <%= avaliacao.proximoTipo %>
+        </button>
+      </form>
+    <% } else { %>
+      <button type="button" class="btn <%= typeof compacto !== 'undefined' && compacto ? '' : 'btn-block' %>" disabled>
+        <% if (avaliacao.antesDaJanela) { %>
+          Ainda não liberado (~<%= avaliacao.diffMin %> min)
+        <% } else if (avaliacao.depoisDaJanela) { %>
+          Fora da janela (+<%= avaliacao.diffMin %> min)
+        <% } else { %>
+          Indisponível
+        <% } %>
+      </button>
+      <% if (avaliacao.podeJustificar) { %>
+        <a class="btn btn-warn <%= typeof compacto !== 'undefined' && compacto ? '' : 'btn-block' %>" href="/justificativa/novo?idPlantao=<%= plantao.IDPLANTAO %>">Justificar</a>
+      <% } %>
+    <% } %>
+  </div>
+</article>

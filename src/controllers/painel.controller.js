@@ -18,7 +18,6 @@ function montarCalendario(plantoes, mesRef) {
   });
 
   const dias = [];
-  // Preenche início da semana (domingo = 0)
   for (let i = 0; i < primeiro.getDay(); i++) {
     dias.push({ vazio: true });
   }
@@ -55,10 +54,16 @@ function montarCalendario(plantoes, mesRef) {
   };
 }
 
+function resolverTab(queryTab) {
+  if (queryTab === "justificativas") return "justificativas";
+  if (queryTab === "abertos") return "abertos";
+  return "plantoes";
+}
+
 async function index(req, res, next) {
   try {
     const crm = req.session.crm;
-    const tab = req.query.tab === "justificativas" ? "justificativas" : "plantoes";
+    const tab = resolverTab(req.query.tab);
     const mes = req.query.mes || formatarDataInput(new Date()).slice(0, 7);
     const diaSelecionado = req.query.dia || formatarDataInput(new Date());
 
@@ -76,8 +81,16 @@ async function index(req, res, next) {
       ({ plantao }) => (plantao.DATA_CHAVE || chaveData(plantao.DATA)) === diaSelecionado
     );
 
+    const plantoesAbertos = plantoesComRegistros
+      .filter(({ plantao }) => plantao.STATUS === "ABERTO" || plantao.STATUS === "EM_ANDAMENTO")
+      .sort((a, b) => {
+        const da = a.plantao.DATA_CHAVE || "";
+        const db = b.plantao.DATA_CHAVE || "";
+        if (da !== db) return da.localeCompare(db);
+        return String(a.plantao.HORAINICIO_INPUT || "").localeCompare(String(b.plantao.HORAINICIO_INPUT || ""));
+      });
+
     const justificativas = await justificativaModel.listarPorCrm(crm);
-    // Filtra justificativas apenas dos plantões registrados (do médico)
     const idsPlantoes = new Set(todosPlantoes.map(p => p.IDPLANTAO));
     const justificativasFiltradas = justificativas.filter(j => idsPlantoes.has(j.IDPLANTAO));
 
@@ -88,6 +101,7 @@ async function index(req, res, next) {
       calendario,
       diaSelecionado,
       plantoesDoDia: doDia,
+      plantoesAbertos,
       justificativas: justificativasFiltradas,
       tolerancia: registroModel.TOLERANCIA_MIN
     });

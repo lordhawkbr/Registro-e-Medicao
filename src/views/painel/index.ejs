@@ -7,8 +7,11 @@
     <form method="post" action="/logout"><button class="btn btn-ghost" type="submit">Sair</button></form>
   </header>
 
-  <nav class="medico-tabs">
-    <a class="medico-tab <%= tab === 'plantoes' ? 'is-active' : '' %>" href="/painel?tab=plantoes&mes=<%= calendario.mesAtual %>&dia=<%= diaSelecionado %>">Plantões</a>
+  <nav class="medico-tabs medico-tabs-3">
+    <a class="medico-tab <%= tab === 'plantoes' ? 'is-active' : '' %>" href="/painel?tab=plantoes&mes=<%= calendario.mesAtual %>&dia=<%= diaSelecionado %>">Calendário</a>
+    <a class="medico-tab <%= tab === 'abertos' ? 'is-active' : '' %>" href="/painel?tab=abertos">
+      Abertos<% if (plantoesAbertos.length) { %> (<%= plantoesAbertos.length %>)<% } %>
+    </a>
     <a class="medico-tab <%= tab === 'justificativas' ? 'is-active' : '' %>" href="/painel?tab=justificativas">Justificativas</a>
   </nav>
 
@@ -48,57 +51,19 @@
 
     <section class="dia-detalhe">
       <h2>Dia <%= diaSelecionado.split('-').reverse().join('/') %></h2>
+      <% if (plantoesDoDia.length > 1) { %>
+        <p class="muted"><%= plantoesDoDia.length %> plantões neste dia</p>
+      <% } %>
 
       <% if (plantoesDoDia.length === 0) { %>
         <p class="muted">Nenhum plantão neste dia.</p>
       <% } %>
 
-      <% plantoesDoDia.forEach(({ plantao, registros, avaliacao }) => { %>
-        <article class="plantao-tile">
-          <div class="plantao-tile-top">
-            <div>
-              <strong>Plantão #<%= plantao.IDPLANTAO %></strong>
-              <p class="plantao-horario"><%= plantao.HORARIO_FORMATADO %></p>
-              <p class="muted"><%= plantao.FILIAL_NOME %> · <%= plantao.SETOR_NOME %></p>
-              <% if (plantao.TIPO_NOME) { %><p class="muted"><%= plantao.TIPO_NOME %></p><% } %>
-            </div>
-            <div class="plantao-badges">
-              <span class="badge badge-<%= plantao.CONCLUSAO.classe %>"><%= plantao.CONCLUSAO.label %></span>
-            </div>
-          </div>
-
-          <% if (registros.length) { %>
-            <ul class="lista-registros">
-              <% registros.forEach(r => { %>
-                <li><%= r.TIPO %> às <%= r.HORABATIDA_FMT || r.HORABATIDA %></li>
-              <% }) %>
-            </ul>
-          <% } %>
-
-          <div class="plantao-actions">
-            <% if (plantao.STATUS === "CONCLUIDO" || plantao.STATUS === "CANCELADO") { %>
-              <span class="muted">Sem ações disponíveis</span>
-            <% } else if (avaliacao.podeIniciar) { %>
-              <form method="post" action="/registro-acesso/<%= plantao.IDPLANTAO %>/bater">
-                <button type="submit" class="btn btn-primary btn-block">Registrar <%= avaliacao.proximoTipo %></button>
-              </form>
-            <% } else { %>
-              <button type="button" class="btn btn-block" disabled>
-                <% if (avaliacao.antesDaJanela) { %>
-                  Ainda não liberado (faltam ~<%= avaliacao.diffMin %> min)
-                <% } else if (avaliacao.depoisDaJanela) { %>
-                  Fora da janela (+<%= avaliacao.diffMin %> min)
-                <% } else { %>
-                  Indisponível agora
-                <% } %>
-              </button>
-              <% if (avaliacao.podeJustificar) { %>
-                <a class="btn btn-block btn-warn" href="/justificativa/novo?idPlantao=<%= plantao.IDPLANTAO %>">Abrir justificativa</a>
-              <% } %>
-            <% } %>
-          </div>
-        </article>
-      <% }) %>
+      <div class="<%= plantoesDoDia.length > 1 ? 'plantao-lista-compacta' : '' %>">
+        <% plantoesDoDia.forEach(({ plantao, registros, avaliacao }) => { %>
+          <%- include('../partials/plantaoTile', { plantao, registros, avaliacao, compacto: plantoesDoDia.length > 1 }) %>
+        <% }) %>
+      </div>
     </section>
 
     <script>
@@ -125,6 +90,23 @@
         btn.addEventListener("click", () => aplicar(!(btn.getAttribute("aria-expanded") === "true")));
       })();
     </script>
+
+  <% } else if (tab === "abertos") { %>
+
+    <section class="dia-detalhe">
+      <h2>Plantões em aberto</h2>
+      <p class="muted">Aberto ou em andamento — atalho sem usar o calendário.</p>
+
+      <% if (plantoesAbertos.length === 0) { %>
+        <p class="muted">Nenhum plantão em aberto.</p>
+      <% } %>
+
+      <div class="<%= plantoesAbertos.length > 1 ? 'plantao-lista-compacta' : '' %>">
+        <% plantoesAbertos.forEach(({ plantao, registros, avaliacao }) => { %>
+          <%- include('../partials/plantaoTile', { plantao, registros, avaliacao, compacto: plantoesAbertos.length > 1 }) %>
+        <% }) %>
+      </div>
+    </section>
 
   <% } else { %>
 

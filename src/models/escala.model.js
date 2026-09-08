@@ -1,5 +1,13 @@
 const { sql, getPool } = require("../config/db");
-const { extrairHoraMinuto, formatarPeriodoPlantao, formatarHoraInput, formatarDataInput } = require("../utils/horario");
+const {
+  extrairHoraMinuto,
+  formatarPeriodoPlantao,
+  formatarHoraInput,
+  formatarDataInput,
+  formatarHoraCurta,
+  formatarDataPt,
+  horariosSobrepostos
+} = require("../utils/horario");
 const { statusConclusao, podeEditarOuCancelar, limparNomeFilial } = require("../utils/statusPlantao");
 
 const SELECT_PLANTAO_ENRIQUECIDO = `
@@ -70,7 +78,7 @@ async function listar(filtros = {}) {
   const result = await request.query(`
     ${SELECT_PLANTAO_ENRIQUECIDO}
     ${where}
-    ORDER BY e.DATA DESC, e.HORAINICIO ASC
+    ORDER BY e.DATA DESC, e.HORAINICIO DESC
   `);
   return result.recordset.map(normalizarPlantao);
 }
@@ -87,19 +95,28 @@ async function buscarPorId(idPlantao) {
 }
 
 async function criar(dados, usuario) {
+  const crmEscalado = montarCrmEscalado(dados);
+  await garantirSemConflito({
+    crmEscalado,
+    data: dados.data,
+    horaInicio: dados.horaInicio,
+    horaFim: dados.horaFim
+  });
+
   const pool = await getPool();
   const dataExpiracao = calcularDataExpiracao(dados.data, dados.horaFim);
+  const empresa = resolverEmpresa(dados);
 
   const result = await pool.request()
     .input("codFilial", sql.Int, dados.codFilial)
-    .input("empresa", sql.Int, dados.empresa)
+    .input("empresa", sql.Int, empresa)
     .input("codCCusto", sql.VarChar, dados.codCCusto)
     .input("data", sql.Date, dados.data)
     .input("horaInicio", sql.VarChar, dados.horaInicio)
     .input("horaFim", sql.VarChar, dados.horaFim)
     .input("idEspecialidade", sql.Int, parseIdEspecialidade(dados.idEspecialidade || dados.especialidade))
     .input("codTipoPlantao", sql.Int, dados.codTipoPlantao)
-    .input("crmEscalado", sql.VarChar, montarCrmEscalado(dados))
+    .input("crmEscalado", sql.VarChar, crmEscalado)
     .input("dataExpiracao", sql.DateTime, dataExpiracao)
     .input("criadoPor", sql.VarChar, usuario)
     .query(`
@@ -121,20 +138,30 @@ async function atualizar(idPlantao, dados) {
     throw new Error("Este plantão já teve ação do médico e não pode mais ser editado.");
   }
 
+  const crmEscalado = montarCrmEscalado(dados);
+  await garantirSemConflito({
+    crmEscalado,
+    data: dados.data,
+    horaInicio: dados.horaInicio,
+    horaFim: dados.horaFim,
+    excluirId: idPlantao
+  });
+
   const pool = await getPool();
   const dataExpiracao = calcularDataExpiracao(dados.data, dados.horaFim);
+  const empresa = resolverEmpresa(dados);
 
   await pool.request()
     .input("id", sql.Int, idPlantao)
     .input("codFilial", sql.Int, dados.codFilial)
-    .input("empresa", sql.Int, dados.empresa)
+    .input("empresa", sql.Int, empresa)
     .input("codCCusto", sql.VarChar, dados.codCCusto)
     .input("data", sql.Date, dados.data)
     .input("horaInicio", sql.VarChar, dados.horaInicio)
     .input("horaFim", sql.VarChar, dados.horaFim)
     .input("idEspecialidade", sql.Int, parseIdEspecialidade(dados.idEspecialidade || dados.especialidade))
     .input("codTipoPlantao", sql.Int, dados.codTipoPlantao)
-    .input("crmEscalado", sql.VarChar, montarCrmEscalado(dados))
+    .input("crmEscalado", sql.VarChar, crmEscalado)
     .input("dataExpiracao", sql.DateTime, dataExpiracao)
     .query(`
       UPDATE ESCALAMEDICA SET
@@ -144,6 +171,60 @@ async function atualizar(idPlantao, dados) {
         CRM_ESCALADO = @crmEscalado, DATAEXPIRACAO = @dataExpiracao
       WHERE IDPLANTAO = @id
     `);
+}
+
+function resolverEmpresa(dados) {
+  const valor = dados.empresa != null && dados.empresa !== ""
+    ? dados.empresa
+    : dados.codFilial;
+  const n = parseInt(valor, 10);
+  if (!Number.isFinite(n)) {
+    throw new Error("Empresa/filial inválida para gravação do plantão.");
+  }
+  return n;
+}
+
+async function buscarConflitosHorario({ crmEscalado, data, horaInicio, horaFim, excluirId = null }) {
+  const pool = await getPool();
+  const request = pool.request()
+    .input("crm", sql.VarChar, crmEscalado)
+    .input("data", sql.Date, data);
+
+  let whereExtra = "";
+  if (excluirId) {
+    request.input("excluirId", sql.Int, excluirId);
+    whereExtra = "AND e.IDPLANTAO <> @excluirId";
+  }
+
+  // Busca plantões do médico no dia anterior, atual e seguinte (virada de turno)
+  const result = await request.query(`
+    SELECT e.IDPLANTAO, e.DATA, e.HORAINICIO, e.HORAFIM, e.STATUS, e.CODFILIAL, e.CODCCUSTO
+    FROM ESCALAMEDICA e
+    WHERE e.CRM_ESCALADO = @crm
+      AND e.STATUS <> 'CANCELADO'
+      AND CAST(e.DATA AS DATE) BETWEEN DATEADD(day, -1, @data) AND DATEADD(day, 1, @data)
+      ${whereExtra}
+  `);
+
+  return result.recordset.filter(p =>
+    horariosSobrepostos(data, horaInicio, horaFim, p.DATA, p.HORAINICIO, p.HORAFIM)
+  );
+}
+
+async function garantirSemConflito(opts) {
+  const conflitos = await buscarConflitosHorario(opts);
+  if (!conflitos.length) return;
+
+  const detalhe = conflitos.map(p => {
+    const data = formatarDataPt(p.DATA);
+    const ini = formatarHoraCurta(p.HORAINICIO);
+    const fim = formatarHoraCurta(p.HORAFIM);
+    return `#${p.IDPLANTAO} (${data} ${ini}-${fim})`;
+  }).join(", ");
+
+  throw new Error(
+    `Este médico já possui plantão no mesmo horário: ${detalhe}. Escolha outro horário ou outro médico.`
+  );
 }
 
 function parseIdEspecialidade(valor) {
