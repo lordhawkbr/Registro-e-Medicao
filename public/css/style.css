@@ -419,6 +419,73 @@ h2 {
   margin-bottom: 18px;
 }
 
+.filtros-multi {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  align-items: start;
+}
+
+.filtros-multi .filtros-actions {
+  align-self: end;
+}
+
+.select-multi {
+  min-height: 96px;
+  padding: 6px 8px !important;
+}
+
+.filtro-hint {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--muted);
+  text-transform: none;
+  letter-spacing: normal;
+  margin-top: 4px;
+}
+
+.conclusoes-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: center;
+}
+
+.tag-sm {
+  font-size: 10px;
+  padding: 3px 7px;
+}
+
+.card-plantao-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: flex-start;
+  margin-bottom: 8px;
+}
+
+.tag-tipo-entrada {
+  color: #1e40af;
+  background: #dbeafe;
+  border-color: #93c5fd;
+}
+
+.tag-tipo-saida {
+  color: #9a3412;
+  background: #ffedd5;
+  border-color: #fdba74;
+}
+
+.tag-tipo-inteiro {
+  color: #6b21a8;
+  background: #f3e8ff;
+  border-color: #d8b4fe;
+}
+
+.tag-tipo-outro {
+  color: #374151;
+  background: #f3f4f6;
+  border-color: #d1d5db;
+}
+
 .filtros-card label {
   display: flex;
   flex-direction: column;
@@ -1049,12 +1116,16 @@ body.body-medico .container-medico {
 }
 
 .plantao-titulo {
-  margin: 0;
+  margin: 0 0 6px;
   font-family: var(--font);
   font-size: 1rem;
   font-weight: 700;
   letter-spacing: 0;
-  line-height: 1.3;
+  line-height: 1.35;
+}
+
+.plantao-titulo strong {
+  font-weight: 800;
 }
 
 .plantao-titulo-hora {
@@ -1074,6 +1145,18 @@ body.body-medico .container-medico {
 
 .plantao-meta strong {
   font-weight: 800;
+}
+
+.plantao-status-linha {
+  margin: 8px 0 6px;
+}
+
+.plantao-batidas {
+  margin: 0 0 8px;
+  font-size: 13px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
 }
 
 .plantao-tile-compact .plantao-titulo {
@@ -1158,6 +1241,18 @@ body.body-medico .container-medico {
     gap: 8px;
     padding: 10px;
     margin-bottom: 10px;
+  }
+
+  .filtros-multi {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .filtros-multi label {
+    min-width: 0;
+  }
+
+  .select-multi {
+    min-height: 84px;
   }
 
   .filtros-card label {

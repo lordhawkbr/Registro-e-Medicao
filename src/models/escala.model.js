@@ -8,7 +8,7 @@ const {
   formatarDataPt,
   horariosSobrepostos
 } = require("../utils/horario");
-const { statusConclusao, podeEditarOuCancelar, limparNomeFilial } = require("../utils/statusPlantao");
+const { statusConclusao, podeEditarOuCancelar, limparNomeFilial, resolverNomeEspecialidade, statusConclusaoMedico } = require("../utils/statusPlantao");
 const { montarCrmEscalado, parseCrmLista, sqlFiltroCrmEscalado } = require("../utils/crm");
 
 const SELECT_PLANTAO_ENRIQUECIDO = `
@@ -44,7 +44,7 @@ function normalizarPlantao(row) {
   if (!row) return row;
   const conclusao = statusConclusao(row);
   const crmLista = parseCrmLista(row.CRM_ESCALADO);
-  const especialidade = row.ESPECIALIDADE_TIPO != null && String(row.ESPECIALIDADE_TIPO).trim() !== ""
+  const especialidadeCodigo = row.ESPECIALIDADE_TIPO != null && String(row.ESPECIALIDADE_TIPO).trim() !== ""
     ? String(row.ESPECIALIDADE_TIPO).trim()
     : (row.IDESPECIALIDADE != null ? String(row.IDESPECIALIDADE) : "");
   return {
@@ -56,7 +56,8 @@ function normalizarPlantao(row) {
     HORARIO_CURTO: `${formatarHoraCurta(row.HORAINICIO)} – ${formatarHoraCurta(row.HORAFIM)}`,
     FILIAL_NOME: limparNomeFilial(row.FILIAL_NOME_RAW) || String(row.CODFILIAL),
     SETOR_NOME: row.SETOR_NOME || row.CODCCUSTO,
-    ESPECIALIDADE_NOME: especialidade,
+    ESPECIALIDADE_CODIGO: especialidadeCodigo,
+    ESPECIALIDADE_NOME: resolverNomeEspecialidade(especialidadeCodigo, row.TIPO_DESCRICAO),
     TIPO_NOME: row.TIPO_DESCRICAO
       ? `${row.TIPO_DESCRICAO}${row.TIPO_TURNO ? ` (${row.TIPO_TURNO}${row.TIPO_TURNO_TIPO ? "/" + row.TIPO_TURNO_TIPO : ""})` : ""}`
       : (row.CODTIPOPLANTAO != null ? `Tipo #${row.CODTIPOPLANTAO}` : ""),
@@ -95,7 +96,7 @@ async function enriquecerNomesMedicos(plantoes) {
     mapa[String(r.CRM_COMPLETO || "").toUpperCase()] = String(r.NOMECOMPLETO || "").trim();
   });
 
-  return lista.map(p => {
+  const comNomes = lista.map(p => {
     const crmLista = p.CRM_LISTA || parseCrmLista(p.CRM_ESCALADO);
     const nomes = crmLista.map(c => mapa[c.toUpperCase()] || c);
     return {
@@ -105,6 +106,82 @@ async function enriquecerNomesMedicos(plantoes) {
       MEDICO_LABEL: nomes.length > 1 ? nomes.join(" · ") : (nomes[0] || p.CRM_ESCALADO)
     };
   });
+
+  return enriquecerStatusPorMedico(comNomes);
+}
+
+async function enriquecerStatusPorMedico(plantoes) {
+  const lista = Array.isArray(plantoes) ? plantoes.filter(Boolean) : [];
+  if (!lista.length) return lista;
+
+  const ids = [...new Set(lista.map(p => p.IDPLANTAO).filter(Boolean))];
+  if (!ids.length) return lista;
+
+  const pool = await getPool();
+  const reqRegs = pool.request();
+  const regParams = ids.map((id, i) => {
+    reqRegs.input(`id${i}`, sql.Int, id);
+    return `@id${i}`;
+  });
+  const reqJust = pool.request();
+  const justParams = ids.map((id, i) => {
+    reqJust.input(`jid${i}`, sql.Int, id);
+    return `@jid${i}`;
+  });
+
+  const [regsResult, justResult] = await Promise.all([
+    reqRegs.query(`
+      SELECT IDPLANTAO, CRM, TIPO, HORABATIDA, RECCREATEDON
+      FROM REGISTROACESSO
+      WHERE IDPLANTAO IN (${regParams.join(",")})
+      ORDER BY RECCREATEDON ASC
+    `),
+    reqJust.query(`
+      SELECT IDPLANTAO, CRM, TIPOAUSENCIA, STATUSAPROVACAO
+      FROM JUSTIFICATIVAAUSENCIA
+      WHERE IDPLANTAO IN (${justParams.join(",")})
+    `)
+  ]);
+
+  const regsByPlantao = {};
+  regsResult.recordset.forEach(r => {
+    const id = r.IDPLANTAO;
+    if (!regsByPlantao[id]) regsByPlantao[id] = [];
+    regsByPlantao[id].push({
+      ...r,
+      HORABATIDA_FMT: formatarHoraInput(r.HORABATIDA)
+    });
+  });
+
+  const justByPlantao = {};
+  justResult.recordset.forEach(j => {
+    const id = j.IDPLANTAO;
+    if (!justByPlantao[id]) justByPlantao[id] = [];
+    justByPlantao[id].push(j);
+  });
+
+  return lista.map(p => {
+    const regsP = regsByPlantao[p.IDPLANTAO] || [];
+    const justP = justByPlantao[p.IDPLANTAO] || [];
+    const medicos = (p.MEDICOS || []).map(m => {
+      const crm = String(m.crm || "").toUpperCase();
+      const regsM = regsP.filter(r => String(r.CRM || "").toUpperCase() === crm);
+      const justM = justP.filter(j => String(j.CRM || "").toUpperCase() === crm);
+      return {
+        ...m,
+        CONCLUSAO: statusConclusaoMedico(p, regsM, justM),
+        REGISTROS: regsM,
+        JUSTIFICATIVAS: justM
+      };
+    });
+
+    return {
+      ...p,
+      MEDICOS: medicos,
+      CONCLUSAO: medicos.length === 1 ? medicos[0].CONCLUSAO : p.CONCLUSAO,
+      CONCLUSOES_MEDICOS: medicos.map(m => m.CONCLUSAO)
+    };
+  });
 }
 
 async function listar(filtros = {}) {
@@ -112,17 +189,40 @@ async function listar(filtros = {}) {
   const request = pool.request();
   let where = "WHERE 1=1";
 
-  if (filtros.data) {
-    request.input("data", sql.Date, filtros.data);
-    where += " AND e.DATA = @data";
+  const dataInicio = filtros.dataInicio || filtros.data || null;
+  const dataFim = filtros.dataFim || filtros.data || null;
+  if (dataInicio && dataFim) {
+    request.input("dataInicio", sql.Date, dataInicio);
+    request.input("dataFim", sql.Date, dataFim);
+    where += " AND e.DATA BETWEEN @dataInicio AND @dataFim";
+  } else if (dataInicio) {
+    request.input("dataInicio", sql.Date, dataInicio);
+    where += " AND e.DATA >= @dataInicio";
+  } else if (dataFim) {
+    request.input("dataFim", sql.Date, dataFim);
+    where += " AND e.DATA <= @dataFim";
   }
-  if (filtros.codFilial) {
-    request.input("codFilial", sql.Int, filtros.codFilial);
-    where += " AND e.CODFILIAL = @codFilial";
+
+  const filiais = Array.isArray(filtros.codFiliais)
+    ? filtros.codFiliais
+    : (filtros.codFilial ? [filtros.codFilial] : []);
+  if (filiais.length) {
+    const parts = filiais.map((f, i) => {
+      request.input(`filial${i}`, sql.Int, parseInt(f, 10));
+      return `@filial${i}`;
+    });
+    where += ` AND e.CODFILIAL IN (${parts.join(",")})`;
   }
-  if (filtros.status) {
-    request.input("status", sql.VarChar, filtros.status);
-    where += " AND e.STATUS = @status";
+
+  const statuses = Array.isArray(filtros.statuses)
+    ? filtros.statuses
+    : (filtros.status ? [filtros.status] : []);
+  if (statuses.length) {
+    const parts = statuses.map((s, i) => {
+      request.input(`status${i}`, sql.VarChar, s);
+      return `@status${i}`;
+    });
+    where += ` AND e.STATUS IN (${parts.join(",")})`;
   }
 
   const result = await request.query(`

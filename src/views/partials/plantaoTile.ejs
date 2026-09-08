@@ -1,59 +1,46 @@
 <%
-  const proximoTipo = avaliacao && avaliacao.proximoTipo ? avaliacao.proximoTipo : null;
-  const concluido = plantao.STATUS === "CANCELADO"
-    || plantao.STATUS === "CONCLUIDO"
+  const conclusao = plantao.CONCLUSAO || { label: "—", classe: "cancelado" };
+  const especialidade = plantao.ESPECIALIDADE_NOME || plantao.ESPECIALIDADE_CODIGO || "";
+  const codigosSemAcao = ["REGISTRADO", "JUSTIFICADO", "CANCELADO", "JUSTIFICATIVA_PENDENTE"];
+  const semAcoes = codigosSemAcao.includes(conclusao.codigo)
+    || plantao.STATUS === "CANCELADO"
     || (avaliacao && avaliacao.concluidoParaMedico);
-  const horaProxima = proximoTipo === "SAIDA"
-    ? (plantao.HORAFIM_INPUT || "")
-    : (plantao.HORAINICIO_INPUT || "");
-  const tituloAcao = concluido
-    ? null
-    : (proximoTipo && horaProxima ? `${proximoTipo} às ${horaProxima}` : null);
-  const especialidade = plantao.ESPECIALIDADE_NOME || plantao.IDESPECIALIDADE || "";
+
+  const entrada = (registros || []).find(r => String(r.TIPO || "").toUpperCase() === "ENTRADA");
+  const saida = (registros || []).find(r => String(r.TIPO || "").toUpperCase() === "SAIDA");
+  const batidas = [];
+  if (entrada) batidas.push(`ENTRADA às ${entrada.HORABATIDA_FMT || entrada.HORABATIDA}`);
+  if (saida) batidas.push(`SAÍDA às ${saida.HORABATIDA_FMT || saida.HORABATIDA}`);
 %>
 <article class="plantao-tile <%= typeof compacto !== 'undefined' && compacto ? 'plantao-tile-compact' : '' %>">
-  <div class="plantao-tile-top">
-    <div>
-      <h3 class="plantao-titulo">
-        Plantão #<%= plantao.IDPLANTAO %><% if (tituloAcao) { %> —
-        <span class="plantao-titulo-hora"><%= tituloAcao %></span><% } %>
-      </h3>
-      <p class="plantao-horario"><%= plantao.HORARIO_FORMATADO %></p>
-      <p class="plantao-meta">
-        <strong>Filial <%= plantao.CODFILIAL %></strong>
-        <% if (especialidade) { %>
-          · <strong>Especialidade <%= especialidade %></strong>
-        <% } else if (plantao.SETOR_NOME) { %>
-          · <%= plantao.SETOR_NOME %>
-        <% } %>
-      </p>
-      <% if (!(typeof compacto !== 'undefined' && compacto) && plantao.TIPO_NOME) { %>
-        <p class="muted"><%= plantao.TIPO_NOME %></p>
-      <% } %>
-    </div>
-    <div class="plantao-badges">
-      <span class="badge badge-<%= plantao.CONCLUSAO.classe %>"><%= plantao.CONCLUSAO.label %></span>
-    </div>
+  <h3 class="plantao-titulo">
+    Plantão #<%= plantao.IDPLANTAO %> -
+    <strong>Filial <%= plantao.CODFILIAL %></strong>
+    <% if (especialidade) { %>
+      · <strong>Especialidade <%= especialidade %></strong>
+    <% } %>
+  </h3>
+
+  <p class="plantao-horario"><%= plantao.HORARIO_FORMATADO %></p>
+
+  <div class="plantao-status-linha">
+    <span class="tag tag-<%= conclusao.classe %>"><%= conclusao.label %></span>
   </div>
 
-  <% if (registros.length) { %>
-    <ul class="lista-registros <%= typeof compacto !== 'undefined' && compacto ? 'lista-registros-compact' : '' %>">
-      <% registros.forEach(r => { %>
-        <li><%= r.TIPO %> às <%= r.HORABATIDA_FMT || r.HORABATIDA %></li>
-      <% }) %>
-    </ul>
+  <% if (batidas.length) { %>
+    <p class="plantao-batidas"><%= batidas.join(" | ") %></p>
   <% } %>
 
   <div class="plantao-actions <%= typeof compacto !== 'undefined' && compacto ? 'plantao-actions-compact' : '' %>">
-    <% if (concluido) { %>
+    <% if (semAcoes) { %>
       <span class="muted">Sem ações disponíveis</span>
-    <% } else if (avaliacao.podeIniciar) { %>
+    <% } else if (avaliacao && avaliacao.podeIniciar) { %>
       <form method="post" action="/registro-acesso/<%= plantao.IDPLANTAO %>/bater">
         <button type="submit" class="btn btn-primary <%= typeof compacto !== 'undefined' && compacto ? '' : 'btn-block' %>">
           Registrar <%= avaliacao.proximoTipo %>
         </button>
       </form>
-    <% } else { %>
+    <% } else if (avaliacao) { %>
       <button type="button" class="btn <%= typeof compacto !== 'undefined' && compacto ? '' : 'btn-block' %>" disabled>
         <% if (avaliacao.antesDaJanela) { %>
           Ainda não liberado (~<%= avaliacao.diffMin %> min)

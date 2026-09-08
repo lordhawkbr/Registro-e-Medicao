@@ -7,26 +7,29 @@
     </div>
   </div>
 
-  <form method="get" class="filtros filtros-card">
+  <form method="get" class="filtros filtros-card filtros-multi">
     <label>
-      Data
-      <input type="date" name="data" value="<%= filtros.data || '' %>">
+      Data início
+      <input type="date" name="dataInicio" value="<%= filtros.dataInicio || '' %>">
     </label>
     <label>
-      Filial
-      <select name="codFilial">
-        <option value="">Todas</option>
+      Data fim
+      <input type="date" name="dataFim" value="<%= filtros.dataFim || '' %>">
+    </label>
+    <label>
+      Filiais
+      <select name="codFilial" multiple size="4" class="select-multi">
         <% filiais.forEach(f => { %>
-          <option value="<%= f.codFilial %>" <%= String(filtros.codFilial || '') === String(f.codFilial) ? 'selected' : '' %>>
+          <option value="<%= f.codFilial %>" <%= (filtros.codFiliais || []).map(String).includes(String(f.codFilial)) ? 'selected' : '' %>>
             <%= f.nome %>
           </option>
         <% }) %>
       </select>
+      <span class="filtro-hint">Ctrl/Cmd para várias</span>
     </label>
     <label>
       Status
-      <select name="status">
-        <option value="">Todos</option>
+      <select name="status" multiple size="5" class="select-multi">
         <% [
           ["ABERTO","Aberto"],
           ["EM_ANDAMENTO","Em andamento"],
@@ -34,9 +37,10 @@
           ["CANCELADO","Cancelado"],
           ["PENDENTE_JUSTIFICATIVA","Justificativa pendente"]
         ].forEach(([v,l]) => { %>
-          <option value="<%= v %>" <%= filtros.status === v ? "selected" : "" %>><%= l %></option>
+          <option value="<%= v %>" <%= (filtros.statuses || []).includes(v) ? "selected" : "" %>><%= l %></option>
         <% }) %>
       </select>
+      <span class="filtro-hint">Ctrl/Cmd para vários</span>
     </label>
     <div class="filtros-actions">
       <button type="submit" class="btn btn-primary">Filtrar</button>
@@ -75,6 +79,9 @@
                   <div class="cell-medico">
                     <div class="cell-nome"><%= m.nome %></div>
                     <div class="muted"><%= m.crm %></div>
+                    <% if (m.CONCLUSAO && p.MEDICOS.length > 1) { %>
+                      <span class="tag tag-sm tag-<%= m.CONCLUSAO.classe %>"><%= m.CONCLUSAO.label %></span>
+                    <% } %>
                   </div>
                 <% }) %>
               <% } else if (p.MEDICO_NOME) { %>
@@ -85,7 +92,15 @@
               <% } %>
             </td>
             <td class="col-conclusao">
-              <span class="tag tag-<%= p.CONCLUSAO.classe %>"><%= p.CONCLUSAO.label %></span>
+              <% if (p.MEDICOS && p.MEDICOS.length > 1) { %>
+                <div class="conclusoes-stack">
+                  <% p.MEDICOS.forEach(m => { %>
+                    <span class="tag tag-sm tag-<%= m.CONCLUSAO.classe %>" title="<%= m.nome %>"><%= m.CONCLUSAO.label %></span>
+                  <% }) %>
+                </div>
+              <% } else { %>
+                <span class="tag tag-<%= p.CONCLUSAO.classe %>"><%= p.CONCLUSAO.label %></span>
+              <% } %>
             </td>
             <td class="col-acoes">
               <% if (p.PODE_EDITAR) { %>

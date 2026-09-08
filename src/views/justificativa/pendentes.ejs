@@ -13,13 +13,15 @@
 
     <% justificativas.forEach(j => { %>
       <div class="card-plantao">
-        <div>
-          <strong>#<%= j.IDJUSTIFICATIVA %></strong> — CRM <%= j.CRM %> —
-          Plantão #<%= j.IDPLANTAO %>
-          (<%= j.HORARIO_FORMATADO || new Date(j.DATA).toLocaleDateString('pt-BR') %>,
-          Filial <%= j.CODFILIAL %> / <%= j.SETOR_NOME || j.CODCCUSTO %>)
+        <div class="card-plantao-head">
+          <div>
+            <strong>#<%= j.IDJUSTIFICATIVA %></strong> — CRM <%= j.CRM %> —
+            Plantão #<%= j.IDPLANTAO %>
+            (<%= j.HORARIO_FORMATADO || new Date(j.DATA).toLocaleDateString('pt-BR') %>,
+            Filial <%= j.CODFILIAL %> / <%= j.SETOR_NOME || j.CODCCUSTO %>)
+          </div>
+          <span class="tag tag-<%= j.TIPO_CLASSE %>"><%= j.TIPO_LABEL || j.TIPOAUSENCIA %></span>
         </div>
-        <div><strong>Tipo:</strong> <%= j.TIPOAUSENCIA %></div>
         <div><strong>Motivo:</strong> <%= j.MOTIVO %></div>
         <% if (j.DATAHORAREAL) { %>
           <div><strong>Horário informado:</strong> <%= new Date(j.DATAHORAREAL).toLocaleString('pt-BR') %></div>
