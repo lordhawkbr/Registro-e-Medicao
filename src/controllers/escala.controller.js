@@ -1,13 +1,10 @@
 const escalaModel = require("../models/escala.model");
 const referenciaModel = require("../models/referencia.model");
+const { parseFiltrosEscala } = require("../utils/filtros");
 
 async function index(req, res, next) {
   try {
-    const filtros = {
-      data: req.query.data || null,
-      codFilial: req.query.codFilial || null,
-      status: req.query.status || null
-    };
+    const filtros = parseFiltrosEscala(req.query);
     const [plantoes, filiais] = await Promise.all([
       escalaModel.listar(filtros),
       referenciaModel.listarFiliais()

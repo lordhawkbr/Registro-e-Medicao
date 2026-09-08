@@ -7,7 +7,7 @@ const {
   formatarHoraInput,
   formatarDataInput
 } = require("../utils/horario");
-const { statusConclusao, limparNomeFilial } = require("../utils/statusPlantao");
+const { statusConclusao, limparNomeFilial, resolverNomeEspecialidade } = require("../utils/statusPlantao");
 const { sqlFiltroCrmEscalado, parseCrmLista } = require("../utils/crm");
 
 const TOLERANCIA_MIN = 15;
@@ -38,7 +38,7 @@ const SELECT_PLANTAO_ENRIQUECIDO = `
 function normalizarPlantao(row) {
   if (!row) return row;
   const crmLista = parseCrmLista(row.CRM_ESCALADO);
-  const especialidade = row.ESPECIALIDADE_TIPO != null && String(row.ESPECIALIDADE_TIPO).trim() !== ""
+  const especialidadeCodigo = row.ESPECIALIDADE_TIPO != null && String(row.ESPECIALIDADE_TIPO).trim() !== ""
     ? String(row.ESPECIALIDADE_TIPO).trim()
     : (row.IDESPECIALIDADE != null ? String(row.IDESPECIALIDADE) : "");
   return {
@@ -50,7 +50,8 @@ function normalizarPlantao(row) {
     DATA_CHAVE: chaveData(row.DATA),
     FILIAL_NOME: limparNomeFilial(row.FILIAL_NOME_RAW) || String(row.CODFILIAL),
     SETOR_NOME: row.SETOR_NOME || row.CODCCUSTO,
-    ESPECIALIDADE_NOME: especialidade,
+    ESPECIALIDADE_CODIGO: especialidadeCodigo,
+    ESPECIALIDADE_NOME: resolverNomeEspecialidade(especialidadeCodigo, row.TIPO_DESCRICAO),
     TIPO_NOME: row.TIPO_DESCRICAO || (row.CODTIPOPLANTAO != null ? `Tipo #${row.CODTIPOPLANTAO}` : ""),
     CRM_LISTA: crmLista,
     CONCLUSAO: statusConclusao(row)
