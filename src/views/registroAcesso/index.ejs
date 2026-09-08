@@ -35,14 +35,14 @@
     <p class="muted">Nenhum plantão ativo neste dia.</p>
   <% } %>
 
-  <div class="<%= plantoes.length > 1 ? 'plantao-lista-compacta' : '' %>">
+  <div class="<%= plantoes.length > 1 ? 'plantao-lista-compacta' : '' %> medico-lista-scroll">
     <% plantoes.forEach(({ plantao, registros, avaliacao }) => { %>
       <article class="plantao-tile <%= plantoes.length > 1 ? 'plantao-tile-compact' : '' %>">
         <div class="plantao-tile-top">
           <div>
             <strong>Plantão #<%= plantao.IDPLANTAO %></strong>
             <p class="plantao-horario"><%= plantao.HORARIO_FORMATADO %></p>
-            <p class="muted"><%= plantao.FILIAL_NOME %> · <%= plantao.SETOR_NOME %></p>
+            <p class="muted">Filial <%= plantao.CODFILIAL %> · <%= plantao.SETOR_NOME %></p>
             <% if (plantoes.length === 1 && plantao.TIPO_NOME) { %><p class="muted"><%= plantao.TIPO_NOME %></p><% } %>
           </div>
           <span class="badge badge-<%= plantao.CONCLUSAO.classe %>"><%= plantao.CONCLUSAO.label %></span>
@@ -57,7 +57,9 @@
           <% }) %>
         </ul>
 
-        <% if (plantao.STATUS !== "CONCLUIDO" && plantao.STATUS !== "CANCELADO") { %>
+        <% if (plantao.STATUS === "CANCELADO" || (avaliacao && avaliacao.concluidoParaMedico)) { %>
+          <p class="muted">Sem ações disponíveis</p>
+        <% } else if (plantao.STATUS !== "CONCLUIDO") { %>
           <div class="plantao-actions <%= plantoes.length > 1 ? 'plantao-actions-compact' : '' %>">
             <% if (avaliacao.podeIniciar) { %>
               <form method="post" action="/registro-acesso/<%= plantao.IDPLANTAO %>/bater">

@@ -3,7 +3,6 @@
     <h1>Plantões</h1>
     <div class="page-header-actions">
       <a class="btn btn-primary" href="/escala/novo">+ Novo plantão</a>
-      <a class="btn" href="/justificativa/pendentes">Justificativas</a>
       <form method="post" action="/logout"><button class="btn">Sair</button></form>
     </div>
   </div>
@@ -52,9 +51,9 @@
           <th class="col-id">ID</th>
           <th class="col-data">Data</th>
           <th class="col-horario">Horário</th>
-          <th>Filial</th>
+          <th class="col-filial">Filial</th>
           <th>Setor</th>
-          <th>Médico</th>
+          <th>Médico(s)</th>
           <th class="col-conclusao">Conclusão</th>
           <th class="col-acoes">Ações</th>
         </tr>
@@ -68,10 +67,17 @@
             <td class="col-id"><%= p.IDPLANTAO %></td>
             <td class="col-data"><%= p.DATA_INPUT ? p.DATA_INPUT.split('-').reverse().join('/') : '' %></td>
             <td class="col-horario" title="<%= p.HORARIO_FORMATADO %>"><%= p.HORARIO_CURTO || p.HORARIO_FORMATADO %></td>
-            <td><%= p.FILIAL_NOME %></td>
+            <td class="col-filial"><%= p.CODFILIAL %></td>
             <td><%= p.SETOR_NOME %></td>
             <td>
-              <% if (p.MEDICO_NOME) { %>
+              <% if (p.MEDICOS && p.MEDICOS.length) { %>
+                <% p.MEDICOS.forEach(m => { %>
+                  <div class="cell-medico">
+                    <div class="cell-nome"><%= m.nome %></div>
+                    <div class="muted"><%= m.crm %></div>
+                  </div>
+                <% }) %>
+              <% } else if (p.MEDICO_NOME) { %>
                 <div class="cell-nome"><%= p.MEDICO_NOME %></div>
                 <div class="muted"><%= p.CRM_ESCALADO %></div>
               <% } else { %>

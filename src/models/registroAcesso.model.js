@@ -8,6 +8,7 @@ const {
   formatarDataInput
 } = require("../utils/horario");
 const { statusConclusao, limparNomeFilial } = require("../utils/statusPlantao");
+const { sqlFiltroCrmEscalado, parseCrmLista } = require("../utils/crm");
 
 const TOLERANCIA_MIN = 15;
 
@@ -35,6 +36,7 @@ const SELECT_PLANTAO_ENRIQUECIDO = `
 
 function normalizarPlantao(row) {
   if (!row) return row;
+  const crmLista = parseCrmLista(row.CRM_ESCALADO);
   return {
     ...row,
     DATA_INPUT: formatarDataInput(row.DATA),
@@ -45,6 +47,7 @@ function normalizarPlantao(row) {
     FILIAL_NOME: limparNomeFilial(row.FILIAL_NOME_RAW) || String(row.CODFILIAL),
     SETOR_NOME: row.SETOR_NOME || row.CODCCUSTO,
     TIPO_NOME: row.TIPO_DESCRICAO || (row.CODTIPOPLANTAO != null ? `Tipo #${row.CODTIPOPLANTAO}` : ""),
+    CRM_LISTA: crmLista,
     CONCLUSAO: statusConclusao(row)
   };
 }
@@ -61,7 +64,7 @@ async function plantoesDoDia(crm, dataRef = null) {
 
   const result = await request.query(`
     ${SELECT_PLANTAO_ENRIQUECIDO}
-    WHERE e.CRM_ESCALADO = @crm
+    WHERE ${sqlFiltroCrmEscalado("e")}
       ${filtroData}
       AND e.STATUS IN ('ABERTO', 'EM_ANDAMENTO', 'PENDENTE_JUSTIFICATIVA')
     ORDER BY e.HORAINICIO ASC
@@ -75,7 +78,7 @@ async function todosPlantoes(crm) {
     .input("crm", sql.VarChar, crm)
     .query(`
       ${SELECT_PLANTAO_ENRIQUECIDO}
-      WHERE e.CRM_ESCALADO = @crm
+      WHERE ${sqlFiltroCrmEscalado("e")}
       ORDER BY e.DATA DESC, e.HORAINICIO DESC
     `);
   return result.recordset.map(normalizarPlantao);
@@ -92,8 +95,11 @@ async function registrosDoPlantao(idPlantao) {
   }));
 }
 
-function avaliarJanela(plantao, registros) {
-  const proximoTipo = registros.length === 0 ? "ENTRADA" : "SAIDA";
+function avaliarJanela(plantao, registros, crm = null) {
+  const registrosDoMedico = crm
+    ? (registros || []).filter(r => String(r.CRM || "").toUpperCase() === String(crm).toUpperCase())
+    : (registros || []);
+  const proximoTipo = registrosDoMedico.length === 0 ? "ENTRADA" : "SAIDA";
   const horaReferencia = proximoTipo === "ENTRADA" ? plantao.HORAINICIO : plantao.HORAFIM;
 
   let alvo;
@@ -123,15 +129,19 @@ function avaliarJanela(plantao, registros) {
   const antesDaJanela = diffMs < 0 && !dentroDaJanela;
   const depoisDaJanela = diffMs > 0 && !dentroDaJanela;
   const podeJustificar = depoisDaJanela;
-  const podeIniciar = dentroDaJanela && plantao.STATUS !== "CONCLUIDO" && plantao.STATUS !== "CANCELADO";
+  const jaConcluiu = registrosDoMedico.some(r => r.TIPO === "SAIDA");
+  const podeIniciar = dentroDaJanela
+    && !jaConcluiu
+    && plantao.STATUS !== "CANCELADO";
 
   return {
-    proximoTipo,
+    proximoTipo: jaConcluiu ? "SAIDA" : proximoTipo,
     dentroDaJanela,
     antesDaJanela,
     depoisDaJanela,
-    podeJustificar,
+    podeJustificar: podeJustificar && !jaConcluiu,
     podeIniciar,
+    concluidoParaMedico: jaConcluiu,
     diffMin: Math.round(diffMinAbs)
   };
 }
@@ -153,11 +163,31 @@ async function registrarBatida(idPlantao, crm, tipo) {
       VALUES (@idPlantao, @tipo, @dataBatida, @horaBatida, @crm)
     `);
 
-  const novoStatus = tipo === "ENTRADA" ? "EM_ANDAMENTO" : "CONCLUIDO";
-  await pool.request()
+  const plantao = await pool.request()
     .input("id", sql.Int, idPlantao)
-    .input("status", sql.VarChar, novoStatus)
-    .query("UPDATE ESCALAMEDICA SET STATUS = @status WHERE IDPLANTAO = @id");
+    .query("SELECT CRM_ESCALADO, STATUS FROM ESCALAMEDICA WHERE IDPLANTAO = @id");
+  const row = plantao.recordset[0];
+  if (!row || row.STATUS === "CANCELADO") return;
+
+  const registros = await registrosDoPlantao(idPlantao);
+  const crms = parseCrmLista(row.CRM_ESCALADO);
+  const todosComSaida = crms.length > 0 && crms.every(c =>
+    registros.some(r => String(r.CRM || "").toUpperCase() === c.toUpperCase() && r.TIPO === "SAIDA")
+  );
+  const algumComEntrada = crms.some(c =>
+    registros.some(r => String(r.CRM || "").toUpperCase() === c.toUpperCase() && r.TIPO === "ENTRADA")
+  );
+
+  let novoStatus = row.STATUS;
+  if (todosComSaida) novoStatus = "CONCLUIDO";
+  else if (algumComEntrada || tipo === "ENTRADA") novoStatus = "EM_ANDAMENTO";
+
+  if (novoStatus !== row.STATUS) {
+    await pool.request()
+      .input("id", sql.Int, idPlantao)
+      .input("status", sql.VarChar, novoStatus)
+      .query("UPDATE ESCALAMEDICA SET STATUS = @status WHERE IDPLANTAO = @id");
+  }
 }
 
 module.exports = {

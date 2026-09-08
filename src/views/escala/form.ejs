@@ -11,8 +11,11 @@
     const dataVal = plantao ? (plantao.DATA_INPUT || plantao.data || "") : "";
     const horaIniVal = plantao ? (plantao.HORAINICIO_INPUT || plantao.horaInicio || "") : "";
     const horaFimVal = plantao ? (plantao.HORAFIM_INPUT || plantao.horaFim || "") : "";
-    const crmAtual = plantao ? (plantao.CRM_ESCALADO || plantao.crmEscalado || "") : "";
-    const ufAtual = plantao ? (plantao.ufCrm || "") : "";
+    const crmBruto = plantao
+      ? (plantao.CRM_ESCALADO || plantao.crmEscalado || [plantao.crmEscalado1, plantao.crmEscalado2, plantao.crmEscalado3].filter(Boolean).join("|") || "")
+      : "";
+    const crmLista = String(crmBruto).split(/[|,;]/).map(s => s.trim()).filter(Boolean).slice(0, 3);
+    while (crmLista.length < 3) crmLista.push("");
     const especialidadeAtual = plantao ? (plantao.IDESPECIALIDADE || plantao.idEspecialidade || plantao.especialidade || "") : "";
   %>
 
@@ -22,8 +25,6 @@
   >
     <input type="hidden" name="idEspecialidade" id="inpIdEspecialidade" required value="<%= especialidadeAtual %>">
     <input type="hidden" name="especialidade" id="inpEspecialidade" value="<%= especialidadeAtual %>">
-    <input type="hidden" name="crmEscalado" id="inpCrmEscalado" required value="<%= crmAtual %>">
-    <input type="hidden" name="ufCrm" id="inpUfCrm" value="<%= ufAtual %>">
 
     <label>
       Filial
@@ -49,7 +50,7 @@
       </select>
     </label>
 
-    <label>
+    <label class="span-3">
       Tipo de plantão
       <select name="codTipoPlantao" id="selTipoPlantao" required>
         <option value="">Selecione setor</option>
@@ -76,12 +77,29 @@
       </label>
     </div>
 
-    <label class="span-3">
-      Médico escalado
-      <select id="selMedico" required>
-        <option value="">Selecione tipo de plantão</option>
-      </select>
-    </label>
+    <div class="span-3 medicos-escalados">
+      <p class="medicos-escalados-titulo">Médicos escalados <span class="muted">(até 3)</span></p>
+      <div class="medicos-escalados-grid">
+        <label>
+          Médico 1
+          <select name="crmEscalado1" id="selMedico1" required>
+            <option value="">Selecione tipo de plantão</option>
+          </select>
+        </label>
+        <label>
+          Médico 2 <span class="muted">(opcional)</span>
+          <select name="crmEscalado2" id="selMedico2">
+            <option value="">—</option>
+          </select>
+        </label>
+        <label>
+          Médico 3 <span class="muted">(opcional)</span>
+          <select name="crmEscalado3" id="selMedico3">
+            <option value="">—</option>
+          </select>
+        </label>
+      </div>
+    </div>
 
     <div class="form-actions">
       <button type="submit" class="btn btn-primary">Salvar</button>
@@ -94,12 +112,15 @@
   const selFilial = document.getElementById("selFilial");
   const selSetor = document.getElementById("selSetor");
   const selTipoPlantao = document.getElementById("selTipoPlantao");
-  const selMedico = document.getElementById("selMedico");
+  const selMedicos = [
+    document.getElementById("selMedico1"),
+    document.getElementById("selMedico2"),
+    document.getElementById("selMedico3")
+  ];
   const inpIdEspecialidade = document.getElementById("inpIdEspecialidade");
   const inpEspecialidade = document.getElementById("inpEspecialidade");
-  const inpCrmEscalado = document.getElementById("inpCrmEscalado");
-  const inpUfCrm = document.getElementById("inpUfCrm");
-  const CRM_ATUAL = "<%= crmAtual %>";
+  const CRM_LISTA = <%- JSON.stringify(crmLista) %>;
+  let medicosCache = [];
 
   async function carregarSetores(codFilial, setorSelecionadoAtual) {
     selSetor.innerHTML = '<option value="">Carregando...</option>';
@@ -140,58 +161,65 @@
     inpIdEspecialidade.value = Number.isFinite(idNum) ? idNum : (especialidade || "");
   }
 
-  async function carregarMedicos(codFilial, especialidade, crmSelecionado) {
-    selMedico.innerHTML = '<option value="">Carregando...</option>';
+  function opcoesMedicosHtml(placeholder, selecionado) {
+    const alvo = (selecionado || "").toUpperCase();
+    return `<option value="">${placeholder}</option>` +
+      medicosCache.map(m => {
+        const crmCompleto = `${m.crm}${m.ufCrm}`;
+        const selected = alvo && (crmCompleto.toUpperCase() === alvo || String(m.crm).toUpperCase() === alvo) ? "selected" : "";
+        return `<option value="${crmCompleto}" ${selected}>${m.nomeCompleto}</option>`;
+      }).join("");
+  }
+
+  function impedirDuplicados() {
+    const escolhidos = selMedicos.map(sel => (sel.value || "").toUpperCase()).filter(Boolean);
+    selMedicos.forEach(sel => {
+      Array.from(sel.options).forEach(opt => {
+        if (!opt.value) return;
+        const valor = opt.value.toUpperCase();
+        const usadoEmOutro = escolhidos.includes(valor) && sel.value.toUpperCase() !== valor;
+        opt.disabled = usadoEmOutro;
+        opt.hidden = usadoEmOutro;
+      });
+    });
+  }
+
+  async function carregarMedicos(codFilial, especialidade, selecionados) {
+    selMedicos.forEach((sel, i) => {
+      sel.innerHTML = `<option value="">${i === 0 ? "Carregando..." : "—"}</option>`;
+    });
     if (!codFilial || !especialidade) {
-      selMedico.innerHTML = '<option value="">Selecione tipo de plantão</option>';
-      inpCrmEscalado.value = "";
-      inpUfCrm.value = "";
+      selMedicos.forEach((sel, i) => {
+        sel.innerHTML = `<option value="">${i === 0 ? "Selecione tipo de plantão" : "—"}</option>`;
+      });
+      medicosCache = [];
       return;
     }
     const res = await fetch(`/api/medicos?codFilial=${codFilial}&especialidade=${encodeURIComponent(especialidade)}`);
-    const medicos = await res.json();
-    if (!medicos.length) {
-      selMedico.innerHTML = '<option value="">Nenhum médico ativo</option>';
-      inpCrmEscalado.value = "";
-      inpUfCrm.value = "";
+    medicosCache = await res.json();
+    if (!medicosCache.length) {
+      selMedicos.forEach((sel, i) => {
+        sel.innerHTML = `<option value="">${i === 0 ? "Nenhum médico ativo" : "—"}</option>`;
+      });
       return;
     }
-
-    const alvo = (crmSelecionado || "").toUpperCase();
-    selMedico.innerHTML = '<option value="">Selecione o médico</option>' +
-      medicos.map(m => {
-        const crmCompleto = `${m.crm}${m.ufCrm}`.toUpperCase();
-        const selected = alvo && (crmCompleto === alvo || String(m.crm).toUpperCase() === alvo) ? "selected" : "";
-        return `<option value="${m.crm}" data-uf="${m.ufCrm}" data-crm-completo="${m.crm}${m.ufCrm}" ${selected}>${m.nomeCompleto}</option>`;
-      }).join("");
-    sincronizarCrmOculto();
-  }
-
-  function sincronizarCrmOculto() {
-    const opt = selMedico.selectedOptions[0];
-    if (!opt || !opt.value) {
-      inpCrmEscalado.value = "";
-      inpUfCrm.value = "";
-      return;
-    }
-    inpCrmEscalado.value = opt.dataset.crmCompleto || `${opt.value}${opt.dataset.uf || ""}`;
-    inpUfCrm.value = opt.dataset.uf || "";
+    const vals = selecionados || ["", "", ""];
+    selMedicos.forEach((sel, i) => {
+      sel.innerHTML = opcoesMedicosHtml(i === 0 ? "Selecione o médico" : "—", vals[i] || "");
+    });
+    impedirDuplicados();
   }
 
   selFilial.addEventListener("change", () => {
     carregarSetores(selFilial.value, null);
     selTipoPlantao.innerHTML = '<option value="">Selecione setor</option>';
-    selMedico.innerHTML = '<option value="">Selecione tipo de plantão</option>';
-    inpCrmEscalado.value = "";
-    inpUfCrm.value = "";
+    carregarMedicos(null, null, null);
     aplicarEspecialidade("");
   });
 
   selSetor.addEventListener("change", () => {
     carregarTiposPlantao(selFilial.value, selSetor.value, null);
-    selMedico.innerHTML = '<option value="">Selecione tipo de plantão</option>';
-    inpCrmEscalado.value = "";
-    inpUfCrm.value = "";
+    carregarMedicos(null, null, null);
     aplicarEspecialidade("");
   });
 
@@ -202,7 +230,7 @@
     carregarMedicos(selFilial.value, especialidade, null);
   });
 
-  selMedico.addEventListener("change", sincronizarCrmOculto);
+  selMedicos.forEach(sel => sel.addEventListener("change", impedirDuplicados));
 
   const filialInicial = selFilial.value;
   const setorInicial = "<%= plantao ? (plantao.CODCCUSTO || plantao.codCCusto || '') : '' %>";
@@ -216,6 +244,6 @@
     const esp = (selTipoPlantao.selectedOptions[0] && selTipoPlantao.selectedOptions[0].dataset.especialidade)
       || especialidadeInicial;
     aplicarEspecialidade(esp);
-    await carregarMedicos(filialInicial, esp, CRM_ATUAL);
+    await carregarMedicos(filialInicial, esp, CRM_LISTA);
   })();
 </script>

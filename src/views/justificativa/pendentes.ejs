@@ -1,29 +1,35 @@
-<div class="page-header">
-  <h1>Justificativas Pendentes</h1>
-  <form method="post" action="/logout"><button class="btn">Sair</button></form>
-</div>
-
-<% if (justificativas.length === 0) { %>
-  <p class="muted">Nenhuma justificativa pendente.</p>
-<% } %>
-
-<% justificativas.forEach(j => { %>
-  <div class="card-plantao">
-    <div>
-      <strong>#<%= j.IDJUSTIFICATIVA %></strong> — CRM <%= j.CRM %> —
-      Plantão #<%= j.IDPLANTAO %>
-      (<%= j.HORARIO_FORMATADO || new Date(j.DATA).toLocaleDateString('pt-BR') %>,
-      <%= j.FILIAL_NOME || j.CODFILIAL %> / <%= j.SETOR_NOME || j.CODCCUSTO %>)
+<div class="page-escala-lista">
+  <div class="page-header">
+    <h1>Justificativas Pendentes</h1>
+    <div class="page-header-actions">
+      <form method="post" action="/logout"><button class="btn">Sair</button></form>
     </div>
-    <div><strong>Tipo:</strong> <%= j.TIPOAUSENCIA %></div>
-    <div><strong>Motivo:</strong> <%= j.MOTIVO %></div>
-    <% if (j.DATAHORAREAL) { %>
-      <div><strong>Horário informado:</strong> <%= new Date(j.DATAHORAREAL).toLocaleString('pt-BR') %></div>
+  </div>
+
+  <div class="tabela-scroll lista-justificativas">
+    <% if (justificativas.length === 0) { %>
+      <p class="muted empty-state">Nenhuma justificativa pendente.</p>
     <% } %>
 
-    <form method="post" action="/justificativa/<%= j.IDJUSTIFICATIVA %>/decisao" style="margin-top:10px; display:flex; gap:8px;">
-      <button type="submit" name="decisao" value="APROVADO" class="btn btn-primary">Aprovar</button>
-      <button type="submit" name="decisao" value="REPROVADO" class="btn">Reprovar</button>
-    </form>
+    <% justificativas.forEach(j => { %>
+      <div class="card-plantao">
+        <div>
+          <strong>#<%= j.IDJUSTIFICATIVA %></strong> — CRM <%= j.CRM %> —
+          Plantão #<%= j.IDPLANTAO %>
+          (<%= j.HORARIO_FORMATADO || new Date(j.DATA).toLocaleDateString('pt-BR') %>,
+          Filial <%= j.CODFILIAL %> / <%= j.SETOR_NOME || j.CODCCUSTO %>)
+        </div>
+        <div><strong>Tipo:</strong> <%= j.TIPOAUSENCIA %></div>
+        <div><strong>Motivo:</strong> <%= j.MOTIVO %></div>
+        <% if (j.DATAHORAREAL) { %>
+          <div><strong>Horário informado:</strong> <%= new Date(j.DATAHORAREAL).toLocaleString('pt-BR') %></div>
+        <% } %>
+
+        <form method="post" action="/justificativa/<%= j.IDJUSTIFICATIVA %>/decisao" class="form-decisao">
+          <button type="submit" name="decisao" value="APROVADO" class="btn btn-primary">Aprovar</button>
+          <button type="submit" name="decisao" value="REPROVADO" class="btn">Reprovar</button>
+        </form>
+      </div>
+    <% }) %>
   </div>
-<% }) %>
+</div>

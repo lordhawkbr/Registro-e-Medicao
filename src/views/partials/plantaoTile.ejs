@@ -3,7 +3,7 @@
     <div>
       <strong>Plantão #<%= plantao.IDPLANTAO %></strong>
       <p class="plantao-horario"><%= plantao.HORARIO_FORMATADO %></p>
-      <p class="muted"><%= plantao.FILIAL_NOME %> · <%= plantao.SETOR_NOME %></p>
+      <p class="muted">Filial <%= plantao.CODFILIAL %> · <%= plantao.SETOR_NOME %></p>
       <% if (!(typeof compacto !== 'undefined' && compacto) && plantao.TIPO_NOME) { %>
         <p class="muted"><%= plantao.TIPO_NOME %></p>
       <% } %>
@@ -22,7 +22,7 @@
   <% } %>
 
   <div class="plantao-actions <%= typeof compacto !== 'undefined' && compacto ? 'plantao-actions-compact' : '' %>">
-    <% if (plantao.STATUS === "CONCLUIDO" || plantao.STATUS === "CANCELADO") { %>
+    <% if (plantao.STATUS === "CANCELADO" || (avaliacao && avaliacao.concluidoParaMedico) || plantao.STATUS === "CONCLUIDO") { %>
       <span class="muted">Sem ações disponíveis</span>
     <% } else if (avaliacao.podeIniciar) { %>
       <form method="post" action="/registro-acesso/<%= plantao.IDPLANTAO %>/bater">
