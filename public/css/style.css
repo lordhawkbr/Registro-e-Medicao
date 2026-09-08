@@ -1485,6 +1485,10 @@ body.body-medico .container-medico {
     width: 132px;
   }
 
+  .tabela-plantoes .col-registros {
+    width: 160px;
+  }
+
   .tag {
     font-size: 10px;
     padding: 3px 7px;
