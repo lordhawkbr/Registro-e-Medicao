@@ -2,70 +2,80 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Login - Escala Médica</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,600;9..40,700&family=Fraunces:opsz,wght@9..144,600;9..144,700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/style.css">
 </head>
-<body>
-  <main class="container" style="max-width:360px; margin-top:80px;">
-    <h1>Entrar</h1>
+<body class="body-medico">
+  <main class="login-shell">
+    <div class="login-card">
+      <p class="medico-eyebrow">Escala Médica</p>
+      <h1 class="login-brand">Entrar</h1>
+      <p class="login-sub">Acesso rápido para registro de plantão e justificativas.</p>
 
-    <div class="tabs">
-      <button type="button" class="tab tab-active" id="tabMedicoBtn" onclick="mostrarTab('medico')">Médico</button>
-      <button type="button" class="tab" id="tabAdminBtn" onclick="mostrarTab('admin')">Administrativo</button>
+      <div class="medico-tabs" style="margin-bottom:16px;">
+        <button type="button" class="medico-tab is-active" id="tabMedicoBtn" onclick="mostrarTab('medico')">Médico</button>
+        <button type="button" class="medico-tab" id="tabAdminBtn" onclick="mostrarTab('admin')">Admin</button>
+      </div>
+
+      <% if (erro) { %>
+        <div class="alert alert-danger"><%= erro %></div>
+      <% } %>
+
+      <form id="formMedico" method="post" action="/login/medico" class="form-grid form-mobile">
+        <div style="display:grid; grid-template-columns:1fr 88px; gap:10px;">
+          <label>
+            CRM
+            <input type="text" name="crm" autofocus placeholder="Ex: 76505" inputmode="numeric">
+          </label>
+          <label>
+            UF
+            <select name="crmUf">
+              <option value="">UF</option>
+              <option>AC</option><option>AL</option><option>AP</option><option>AM</option>
+              <option>BA</option><option>CE</option><option>DF</option><option>ES</option>
+              <option>GO</option><option>MA</option><option>MT</option><option>MS</option>
+              <option>MG</option><option>PA</option><option>PB</option><option>PR</option>
+              <option>PE</option><option>PI</option><option>RJ</option><option>RN</option>
+              <option>RS</option><option>RO</option><option>RR</option><option>SC</option>
+              <option>SP</option><option>SE</option><option>TO</option>
+            </select>
+          </label>
+        </div>
+        <label>
+          CPF (apenas números)
+          <input type="text" name="cpf" inputmode="numeric" placeholder="Somente números" maxlength="11">
+        </label>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary btn-block">Entrar</button>
+        </div>
+      </form>
+
+      <form id="formAdmin" method="post" action="/login/admin" class="form-grid form-mobile" style="display:none;">
+        <label>
+          Login
+          <input type="text" name="login" placeholder="Login Fluig">
+        </label>
+        <label>
+          Senha
+          <input type="password" name="senha">
+        </label>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary btn-block">Entrar</button>
+        </div>
+      </form>
     </div>
-
-    <% if (erro) { %>
-      <div class="alert alert-danger"><%= erro %></div>
-    <% } %>
-
-    <form id="formMedico" method="post" action="/login/medico" class="form-grid" style="grid-template-columns:1fr 80px;">
-      <label>
-        CRM
-        <input type="text" name="crm" autofocus placeholder="Ex: 76505">
-      </label>
-      <label>
-        UF
-        <select name="crmUf">
-          <option value="">UF</option>
-          <option>AC</option><option>AL</option><option>AP</option><option>AM</option>
-          <option>BA</option><option>CE</option><option>DF</option><option>ES</option>
-          <option>GO</option><option>MA</option><option>MT</option><option>MS</option>
-          <option>MG</option><option>PA</option><option>PB</option><option>PR</option>
-          <option>PE</option><option>PI</option><option>RJ</option><option>RN</option>
-          <option>RS</option><option>RO</option><option>RR</option><option>SC</option>
-          <option>SP</option><option>SE</option><option>TO</option>
-        </select>
-      </label>
-      <label style="grid-column: 1 / -1;">
-        CPF (apenas números)
-        <input type="text" name="cpf" inputmode="numeric" placeholder="Somente números" maxlength="11">
-      </label>
-      <div class="form-actions">
-        <button type="submit" class="btn btn-primary">Entrar</button>
-      </div>
-    </form>
-
-    <form id="formAdmin" method="post" action="/login/admin" class="form-grid" style="grid-template-columns:1fr; display:none;">
-      <label>
-        Login
-        <input type="text" name="login" placeholder="Login Fluig">
-      </label>
-      <label>
-        Senha
-        <input type="password" name="senha">
-      </label>
-      <div class="form-actions">
-        <button type="submit" class="btn btn-primary">Entrar</button>
-      </div>
-    </form>
   </main>
 
   <script>
     function mostrarTab(tab) {
       document.getElementById("formMedico").style.display = tab === "medico" ? "grid" : "none";
       document.getElementById("formAdmin").style.display = tab === "admin" ? "grid" : "none";
-      document.getElementById("tabMedicoBtn").classList.toggle("tab-active", tab === "medico");
-      document.getElementById("tabAdminBtn").classList.toggle("tab-active", tab === "admin");
+      document.getElementById("tabMedicoBtn").classList.toggle("is-active", tab === "medico");
+      document.getElementById("tabAdminBtn").classList.toggle("is-active", tab === "admin");
     }
   </script>
 </body>

@@ -1,80 +1,126 @@
-<div class="page-header">
-  <h1>Olá, <%= nome %></h1>
-  <form method="post" action="/logout"><button class="btn">Sair</button></form>
-</div>
-
-<div class="tabs">
-  <a class="tab <%= tab === 'registros' ? 'tab-active' : '' %>" href="/painel?tab=registros">Registros</a>
-  <a class="tab <%= tab === 'justificativas' ? 'tab-active' : '' %>" href="/painel?tab=justificativas">Justificativas (<%= justificativas.length %>)</a>
-</div>
-
-<% if (tab === "registros") { %>
-
-  <h2>Pendentes (<%= pendentes.length %>)</h2>
-  <% if (pendentes.length === 0) { %>
-    <p>Nenhum plantão pendente.</p>
-  <% } %>
-  <% pendentes.forEach(({ plantao, registros }) => { %>
-    <div class="card-plantao">
-      <div>
-        <strong>Plantão #<%= plantao.IDPLANTAO %></strong> —
-        <%= new Date(plantao.DATA).toLocaleDateString('pt-BR') %> —
-        <%= plantao.HORAINICIO %> às <%= plantao.HORAFIM %> —
-        Filial <%= plantao.CODFILIAL %> / Setor <%= plantao.CODCCUSTO %>
-        <span class="badge badge-<%= plantao.STATUS.toLowerCase() %>"><%= plantao.STATUS %></span>
-      </div>
-      <ul class="lista-registros">
-        <% registros.forEach(r => { %><li><%= r.TIPO %> às <%= r.HORABATIDA %></li><% }) %>
-      </ul>
-      <a class="btn btn-primary" href="/registro-acesso">Ir para registro de hoje</a>
+<div class="medico-shell">
+  <header class="medico-header">
+    <div>
+      <p class="medico-eyebrow">Área do médico</p>
+      <h1><%= nome %></h1>
     </div>
-  <% }) %>
+    <form method="post" action="/logout"><button class="btn btn-ghost" type="submit">Sair</button></form>
+  </header>
 
-  <h2>Já concluídos</h2>
-  <% if (concluidos.length === 0) { %>
-    <p>Nenhum registro concluído ainda.</p>
-  <% } %>
-  <table class="tabela">
-    <thead>
-      <tr><th>ID</th><th>Data</th><th>Horário</th><th>Filial/Setor</th><th>Status</th><th>Registros</th></tr>
-    </thead>
-    <tbody>
-      <% concluidos.forEach(({ plantao, registros }) => { %>
-        <tr>
-          <td><%= plantao.IDPLANTAO %></td>
-          <td><%= new Date(plantao.DATA).toLocaleDateString('pt-BR') %></td>
-          <td><%= plantao.HORAINICIO %>-<%= plantao.HORAFIM %></td>
-          <td><%= plantao.CODFILIAL %>/<%= plantao.CODCCUSTO %></td>
-          <td><span class="badge badge-<%= plantao.STATUS.toLowerCase() %>"><%= plantao.STATUS %></span></td>
-          <td><%= registros.map(r => `${r.TIPO} ${r.HORABATIDA}`).join(" · ") %></td>
-        </tr>
-      <% }) %>
-    </tbody>
-  </table>
+  <nav class="medico-tabs">
+    <a class="medico-tab <%= tab === 'plantoes' ? 'is-active' : '' %>" href="/painel?tab=plantoes&mes=<%= calendario.mesAtual %>&dia=<%= diaSelecionado %>">Plantões</a>
+    <a class="medico-tab <%= tab === 'justificativas' ? 'is-active' : '' %>" href="/painel?tab=justificativas">Justificativas</a>
+  </nav>
 
-<% } else { %>
+  <% if (tab === "plantoes") { %>
 
-  <div class="page-header">
-    <h2>Minhas Justificativas</h2>
-  </div>
-  <table class="tabela">
-    <thead>
-      <tr><th>ID</th><th>Plantão</th><th>Data</th><th>Tipo</th><th>Status</th></tr>
-    </thead>
-    <tbody>
-      <% if (justificativas.length === 0) { %>
-        <tr><td colspan="5">Nenhuma justificativa enviada.</td></tr>
+    <section class="calendario-card">
+      <div class="calendario-nav">
+        <a class="btn btn-ghost" href="/painel?tab=plantoes&mes=<%= calendario.mesAnterior %>&dia=<%= diaSelecionado %>">‹</a>
+        <strong class="calendario-mes"><%= calendario.mesLabel %></strong>
+        <a class="btn btn-ghost" href="/painel?tab=plantoes&mes=<%= calendario.mesProximo %>&dia=<%= diaSelecionado %>">›</a>
+      </div>
+
+      <div class="calendario-grid">
+        <% calendario.diasSemana.forEach(d => { %>
+          <div class="calendario-dow"><%= d %></div>
+        <% }) %>
+        <% calendario.dias.forEach(dia => { %>
+          <% if (dia.vazio) { %>
+            <div class="calendario-cell is-empty"></div>
+          <% } else { %>
+            <a
+              class="calendario-cell <%= dia.hoje ? 'is-today' : '' %> <%= dia.temPlantao ? 'has-shift' : '' %> <%= dia.chave === diaSelecionado ? 'is-selected' : '' %>"
+              href="/painel?tab=plantoes&mes=<%= calendario.mesAtual %>&dia=<%= dia.chave %>"
+            >
+              <span class="calendario-daynum"><%= dia.dia %></span>
+              <% if (dia.temPlantao) { %>
+                <span class="calendario-dot" title="<%= dia.qtd %> plantão(ões)"></span>
+              <% } %>
+            </a>
+          <% } %>
+        <% }) %>
+      </div>
+    </section>
+
+    <section class="dia-detalhe">
+      <h2>Dia <%= diaSelecionado.split('-').reverse().join('/') %></h2>
+
+      <% if (plantoesDoDia.length === 0) { %>
+        <p class="muted">Nenhum plantão neste dia.</p>
       <% } %>
-      <% justificativas.forEach(j => { %>
-        <tr>
-          <td><%= j.IDJUSTIFICATIVA %></td>
-          <td>#<%= j.IDPLANTAO %></td>
-          <td><%= new Date(j.DATA).toLocaleDateString('pt-BR') %></td>
-          <td><%= j.TIPOAUSENCIA %></td>
-          <td><span class="badge badge-<%= j.STATUSAPROVACAO.toLowerCase() %>"><%= j.STATUSAPROVACAO %></span></td>
-        </tr>
-      <% }) %>
-    </tbody>
-  </table>
 
-<% } %>
+      <% plantoesDoDia.forEach(({ plantao, registros, avaliacao }) => { %>
+        <article class="plantao-tile">
+          <div class="plantao-tile-top">
+            <div>
+              <strong>Plantão #<%= plantao.IDPLANTAO %></strong>
+              <p class="plantao-horario"><%= plantao.HORARIO_FORMATADO %></p>
+              <p class="muted">Filial <%= plantao.CODFILIAL %> · Setor <%= plantao.CODCCUSTO %></p>
+            </div>
+            <span class="badge badge-<%= plantao.STATUS.toLowerCase() %>"><%= plantao.STATUS %></span>
+          </div>
+
+          <% if (registros.length) { %>
+            <ul class="lista-registros">
+              <% registros.forEach(r => { %>
+                <li><%= r.TIPO %> às <%= r.HORABATIDA_FMT || r.HORABATIDA %></li>
+              <% }) %>
+            </ul>
+          <% } %>
+
+          <div class="plantao-actions">
+            <% if (plantao.STATUS === "CONCLUIDO" || plantao.STATUS === "CANCELADO") { %>
+              <span class="muted">Sem ações disponíveis</span>
+            <% } else if (avaliacao.podeIniciar) { %>
+              <form method="post" action="/registro-acesso/<%= plantao.IDPLANTAO %>/bater">
+                <button type="submit" class="btn btn-primary btn-block">Registrar <%= avaliacao.proximoTipo %></button>
+              </form>
+            <% } else { %>
+              <button type="button" class="btn btn-block" disabled>
+                <% if (avaliacao.antesDaJanela) { %>
+                  Ainda não liberado (faltam ~<%= avaliacao.diffMin %> min)
+                <% } else if (avaliacao.depoisDaJanela) { %>
+                  Fora da janela (+<%= avaliacao.diffMin %> min)
+                <% } else { %>
+                  Indisponível agora
+                <% } %>
+              </button>
+              <% if (avaliacao.podeJustificar) { %>
+                <a class="btn btn-block btn-warn" href="/justificativa/novo?idPlantao=<%= plantao.IDPLANTAO %>">Abrir justificativa</a>
+              <% } %>
+            <% } %>
+          </div>
+        </article>
+      <% }) %>
+    </section>
+
+  <% } else { %>
+
+    <section class="dia-detalhe">
+      <h2>Minhas justificativas</h2>
+      <p class="muted">Somente plantões da sua escala.</p>
+
+      <% if (justificativas.length === 0) { %>
+        <p class="muted">Nenhuma justificativa enviada.</p>
+      <% } %>
+
+      <% justificativas.forEach(j => { %>
+        <article class="plantao-tile">
+          <div class="plantao-tile-top">
+            <div>
+              <strong>#<%= j.IDJUSTIFICATIVA %></strong>
+              <p class="muted">Plantão #<%= j.IDPLANTAO %> · <%= new Date(j.DATA).toLocaleDateString('pt-BR') %></p>
+              <p><%= j.TIPOAUSENCIA %></p>
+            </div>
+            <span class="badge badge-<%= j.STATUSAPROVACAO.toLowerCase() %>"><%= j.STATUSAPROVACAO %></span>
+          </div>
+          <% if (j.MOTIVO) { %>
+            <p class="justificativa-motivo"><%= j.MOTIVO %></p>
+          <% } %>
+        </article>
+      <% }) %>
+    </section>
+
+  <% } %>
+</div>

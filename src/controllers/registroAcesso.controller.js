@@ -1,10 +1,12 @@
 const registroModel = require("../models/registroAcesso.model");
 const escalaModel = require("../models/escala.model");
+const { formatarDataInput } = require("../utils/horario");
 
 async function index(req, res, next) {
   try {
     const crm = req.session.crm;
-    const plantoes = await registroModel.plantoesDoDia(crm);
+    const data = req.query.data || formatarDataInput(new Date());
+    const plantoes = await registroModel.plantoesDoDia(crm, data);
 
     const plantoesComStatus = [];
     for (const p of plantoes) {
@@ -15,6 +17,8 @@ async function index(req, res, next) {
 
     res.render("registroAcesso/index", {
       crm,
+      nome: req.session.nome,
+      data,
       plantoes: plantoesComStatus,
       tolerancia: registroModel.TOLERANCIA_MIN,
       erro: req.query.erro || null,
@@ -38,12 +42,12 @@ async function bater(req, res, next) {
     const registros = await registroModel.registrosDoPlantao(idPlantao);
     const avaliacao = registroModel.avaliarJanela(plantao, registros);
 
-    if (!avaliacao.dentroDaJanela) {
-      return res.redirect(`/registro-acesso?erro=fora_da_janela&plantao=${idPlantao}`);
+    if (!avaliacao.podeIniciar) {
+      return res.redirect(`/registro-acesso?erro=fora_da_janela&plantao=${idPlantao}&data=${plantao.DATA_INPUT || ""}`);
     }
 
     await registroModel.registrarBatida(idPlantao, crm, avaliacao.proximoTipo);
-    res.redirect("/registro-acesso");
+    res.redirect(`/registro-acesso?data=${plantao.DATA_INPUT || ""}`);
   } catch (err) {
     next(err);
   }

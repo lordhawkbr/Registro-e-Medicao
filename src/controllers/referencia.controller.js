@@ -1,4 +1,5 @@
 const referenciaModel = require("../models/referencia.model");
+const medicoModel = require("../models/medico.model");
 
 async function empresaPorFilial(req, res, next) {
   try {
@@ -29,4 +30,15 @@ async function tiposPlantao(req, res, next) {
   }
 }
 
-module.exports = { empresaPorFilial, setoresPorFilial, tiposPlantao };
+async function medicos(req, res, next) {
+  try {
+    const { codFilial, especialidade } = req.query;
+    if (!codFilial) return res.json([]);
+    const lista = await medicoModel.listarPorFilialEspecialidade(codFilial, especialidade);
+    res.json(lista);
+  } catch (err) {
+    next(err);
+  }
+}
+
+module.exports = { empresaPorFilial, setoresPorFilial, tiposPlantao, medicos };
