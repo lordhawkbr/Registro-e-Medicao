@@ -16,7 +16,9 @@
   --display: "Fraunces", Georgia, serif;
 }
 
-* { box-sizing: border-box; }
+* {
+  box-sizing: border-box;
+}
 
 body {
   font-family: var(--font);
@@ -51,7 +53,7 @@ body.body-medico {
 }
 
 .container {
-  max-width: 1000px;
+  max-width: 1080px;
   margin: 24px auto;
   padding: 0 16px 40px;
 }
@@ -89,7 +91,7 @@ body.body-admin .container-lista .filtros-card {
 .tabela-scroll {
   flex: 1 1 auto;
   min-height: 0;
-  overflow-x: hidden;
+  overflow-x: auto;
   overflow-y: auto;
   border-radius: 12px;
   box-shadow: var(--shadow);
@@ -117,11 +119,31 @@ body.body-admin .container-lista .filtros-card {
   vertical-align: middle;
 }
 
-.tabela-plantoes .col-id { width: 56px; }
-.tabela-plantoes .col-data { width: 88px; }
-.tabela-plantoes .col-horario { width: 110px; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.tabela-plantoes .col-conclusao { width: 150px; }
-.tabela-plantoes .col-acoes { width: 168px; white-space: nowrap; }
+.tabela-plantoes .col-id {
+  width: 56px;
+}
+
+.tabela-plantoes .col-data {
+  width: auto;
+}
+
+.tabela-plantoes .col-horario {
+  width: auto;
+  font-variant-numeric: tabular-nums;
+  white-space: wrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tabela-plantoes .col-conclusao {
+  text-align: center;
+  width: 120px;
+}
+
+.tabela-plantoes .col-acoes {
+  width: 168px;
+  white-space: nowrap;
+}
 
 .cell-nome {
   font-weight: 600;
@@ -132,10 +154,9 @@ body.body-admin .container-lista .filtros-card {
   display: inline-flex;
   align-items: stretch;
   border-radius: 10px;
-  overflow: hidden;
   border: 1px solid #c7d2d0;
   background: #fff;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
 }
 
 .acoes-btns form {
@@ -143,6 +164,7 @@ body.body-admin .container-lista .filtros-card {
 }
 
 .btn-acao {
+  width: 100%;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -160,19 +182,24 @@ body.body-admin .container-lista .filtros-card {
 }
 
 .btn-editar {
+  width: 100%;
   color: #1d4ed8;
   background: #eff6ff;
   border-right: 1px solid #bfdbfe;
 }
 
-.btn-editar:hover { background: #dbeafe; }
+.btn-editar:hover {
+  background: #dbeafe;
+}
 
 .btn-cancelar {
   color: #b91c1c;
   background: #fef2f2;
 }
 
-.btn-cancelar:hover { background: #fee2e2; }
+.btn-cancelar:hover {
+  background: #fee2e2;
+}
 
 .tag {
   display: inline-flex;
@@ -238,7 +265,8 @@ body.body-admin .container-lista .filtros-card {
   flex-wrap: wrap;
 }
 
-h1, h2 {
+h1,
+h2 {
   font-family: var(--display);
   letter-spacing: -0.02em;
   margin: 0 0 8px;
@@ -266,7 +294,9 @@ h1, h2 {
   border-color: var(--brand);
 }
 
-.btn-primary:hover { background: var(--brand-dark); }
+.btn-primary:hover {
+  background: var(--brand-dark);
+}
 
 .btn-ghost {
   background: transparent;
@@ -347,19 +377,36 @@ h1, h2 {
   flex-wrap: wrap;
 }
 
-.col-horario { min-width: 220px; max-width: 320px; }
-.col-acoes { white-space: nowrap; }
+.col-horario {
+  min-width: 220px;
+  max-width: 320px;
+}
 
-.badge-registrado { background: var(--ok); }
-.badge-justificado { background: #0f766e; }
-.badge-pendente_entrada { background: #2563eb; }
-.badge-pendente_saida { background: #d97706; }
+.col-acoes {
+  white-space: nowrap;
+}
+
+.badge-registrado {
+  background: var(--ok);
+}
+
+.badge-justificado {
+  background: #0f766e;
+}
+
+.badge-pendente_entrada {
+  background: #2563eb;
+}
+
+.badge-pendente_saida {
+  background: #d97706;
+}
 
 .form-page {
   width: 100%;
   max-width: 880px;
   margin: 0 auto;
-  overflow: hidden;
+  /* overflow: hidden; */
 }
 
 .form-escala {
@@ -373,22 +420,28 @@ h1, h2 {
   border-radius: 16px;
   padding: 16px;
   box-shadow: var(--shadow);
-  overflow: hidden;
+  /* overflow: hidden; */
 }
 
 .form-grid.form-escala {
   max-width: 100%;
 }
 
-.form-escala > label,
-.form-escala .form-row-horario > label,
+.form-escala>label,
+.form-escala .form-row-horario>label,
 .form-escala .span-3 {
   min-width: 0;
   max-width: 100%;
 }
 
-.form-escala .span-2 { grid-column: span 2; min-width: 0; }
-.form-escala .span-3 { grid-column: 1 / -1; }
+.form-escala .span-2 {
+  grid-column: span 2;
+  min-width: 0;
+}
+
+.form-escala .span-3 {
+  grid-column: 1 / -1;
+}
 
 .form-row-horario {
   grid-column: 1 / -1;
@@ -447,11 +500,11 @@ h1, h2 {
   border-collapse: collapse;
   background: var(--surface);
   border-radius: 12px;
-  overflow: hidden;
   box-shadow: var(--shadow);
 }
 
-.tabela th, .tabela td {
+.tabela th,
+.tabela td {
   padding: 10px 12px;
   border-bottom: 1px solid var(--line);
   text-align: left;
@@ -468,14 +521,37 @@ h1, h2 {
   white-space: nowrap;
 }
 
-.badge-aberto { background: #2563eb; }
-.badge-em_andamento { background: #d97706; }
-.badge-concluido { background: var(--ok); }
-.badge-cancelado { background: #6b7280; }
-.badge-pendente_justificativa { background: var(--danger); }
-.badge-pendente { background: #d97706; }
-.badge-aprovado { background: var(--ok); }
-.badge-reprovado { background: var(--danger); }
+.badge-aberto {
+  background: #2563eb;
+}
+
+.badge-em_andamento {
+  background: #d97706;
+}
+
+.badge-concluido {
+  background: var(--ok);
+}
+
+.badge-cancelado {
+  background: #6b7280;
+}
+
+.badge-pendente_justificativa {
+  background: var(--danger);
+}
+
+.badge-pendente {
+  background: #d97706;
+}
+
+.badge-aprovado {
+  background: var(--ok);
+}
+
+.badge-reprovado {
+  background: var(--danger);
+}
 
 .link-danger {
   background: none;
@@ -580,7 +656,11 @@ h1, h2 {
   font-weight: 600;
 }
 
-.muted { color: var(--muted); font-size: 13px; margin: 4px 0; }
+.muted {
+  color: var(--muted);
+  font-size: 13px;
+  margin: 4px 0;
+}
 
 /* Login */
 .login-shell {
@@ -657,6 +737,11 @@ h1, h2 {
   border: 1px solid var(--line);
 }
 
+.medico-tabs>* {
+  display: grid;
+  place-items: center;
+}
+
 .medico-tabs-3 {
   grid-template-columns: 1fr 1fr 1fr;
 }
@@ -725,7 +810,9 @@ h1, h2 {
   box-shadow: var(--shadow);
 }
 
-.calendario-card { padding: 14px; }
+.calendario-card {
+  padding: 14px;
+}
 
 .calendario-nav {
   display: flex;
@@ -767,7 +854,9 @@ h1, h2 {
   font-weight: 600;
 }
 
-.calendario-cell.is-empty { visibility: hidden; }
+.calendario-cell.is-empty {
+  visibility: hidden;
+}
 
 .calendario-cell.is-today {
   box-shadow: inset 0 0 0 1.5px var(--brand);
@@ -846,35 +935,73 @@ h1, h2 {
 }
 
 @media (max-width: 720px) {
-  .form-grid { grid-template-columns: 1fr; }
-  .form-escala { grid-template-columns: 1fr; }
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .form-escala {
+    grid-template-columns: 1fr;
+  }
+
   .form-escala .span-2,
-  .form-escala .span-3 { grid-column: 1 / -1; }
-  .form-row-horario { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
-  .form-row-horario label { font-size: 12px; }
-  .filtros-card { grid-template-columns: 1fr; }
-  .tabela { display: block; overflow-x: auto; }
-  .page-header { align-items: flex-start; }
-  body.body-admin { height: auto; overflow: auto; }
+  .form-escala .span-3 {
+    grid-column: 1 / -1;
+  }
+
+  .form-row-horario {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .form-row-horario label {
+    font-size: 12px;
+  }
+
+  .filtros-card {
+    grid-template-columns: 1fr;
+  }
+
+  .tabela {
+    display: block;
+    overflow-x: auto;
+  }
+
+  .page-header {
+    align-items: flex-start;
+  }
+
+  body.body-admin {
+    height: auto;
+    overflow: auto;
+  }
+
   body.body-admin .container.container-lista {
     height: auto;
     overflow: visible;
   }
+
   .tabela-scroll {
     max-height: 65vh;
     overflow-x: hidden;
   }
-  .tabela-plantoes .col-acoes { width: 120px; }
+
+  .tabela-plantoes .col-acoes {
+    width: 120px;
+  }
+
   .btn-acao span,
   .btn-acao {
     font-size: 11px;
     padding: 5px 8px;
   }
+
   .medico-tabs-3 {
     grid-template-columns: 1fr;
   }
 }
 
 @media (min-width: 721px) and (max-width: 900px) {
-  .form-row-horario { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .form-row-horario {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
