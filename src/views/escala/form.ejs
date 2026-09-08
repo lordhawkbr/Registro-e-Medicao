@@ -14,6 +14,9 @@
     const crmAtual = plantao ? (plantao.CRM_ESCALADO || plantao.crmEscalado || "") : "";
     const ufAtual = plantao ? (plantao.ufCrm || "") : "";
     const especialidadeAtual = plantao ? (plantao.IDESPECIALIDADE || plantao.idEspecialidade || plantao.especialidade || "") : "";
+    const empresaVal = plantao
+      ? (plantao.EMPRESA || plantao.empresa || plantao.CODFILIAL || plantao.codFilial || "")
+      : "";
   %>
 
   <form id="formEscala" method="post"
@@ -24,8 +27,9 @@
     <input type="hidden" name="especialidade" id="inpEspecialidade" value="<%= especialidadeAtual %>">
     <input type="hidden" name="crmEscalado" id="inpCrmEscalado" required value="<%= crmAtual %>">
     <input type="hidden" name="ufCrm" id="inpUfCrm" value="<%= ufAtual %>">
+    <input type="hidden" name="empresa" id="idEmpresa" required value="<%= empresaVal %>">
 
-    <label class="span-2">
+    <label>
       Filial
       <select name="codFilial" id="selFilial" required>
         <option value="">Selecione</option>
@@ -38,12 +42,6 @@
     </label>
 
     <label>
-      Empresa
-      <input type="text" name="empresa" id="inpEmpresa" required readonly
-        value="<%= plantao ? (plantao.EMPRESA || plantao.empresa || '') : '' %>">
-    </label>
-
-    <label class="span-2">
       Centro de custo
       <select name="codCCusto" id="selSetor" required>
         <option value="">Selecione a filial</option>
@@ -55,7 +53,7 @@
       </select>
     </label>
 
-    <label class="span-2">
+    <label>
       Tipo de plantão
       <select name="codTipoPlantao" id="selTipoPlantao" required>
         <option value="">Selecione setor</option>
@@ -67,18 +65,20 @@
       </select>
     </label>
 
-    <label>
-      Data
-      <input type="date" name="data" required value="<%= dataVal %>">
-    </label>
-    <label>
-      Início
-      <input type="time" name="horaInicio" required value="<%= horaIniVal %>">
-    </label>
-    <label>
-      Fim
-      <input type="time" name="horaFim" required value="<%= horaFimVal %>">
-    </label>
+    <div class="form-row-horario">
+      <label>
+        Data
+        <input type="date" name="data" id="inpData" required value="<%= dataVal %>">
+      </label>
+      <label>
+        Início
+        <input type="time" name="horaInicio" id="inpHoraInicio" required value="<%= horaIniVal %>">
+      </label>
+      <label>
+        Fim
+        <input type="time" name="horaFim" id="inpHoraFim" required value="<%= horaFimVal %>">
+      </label>
+    </div>
 
     <label class="span-3">
       Médico escalado
@@ -96,7 +96,7 @@
 
 <script>
   const selFilial = document.getElementById("selFilial");
-  const inpEmpresa = document.getElementById("inpEmpresa");
+  const idEmpresa = document.getElementById("idEmpresa");
   const selSetor = document.getElementById("selSetor");
   const selTipoPlantao = document.getElementById("selTipoPlantao");
   const selMedico = document.getElementById("selMedico");
@@ -106,11 +106,8 @@
   const inpUfCrm = document.getElementById("inpUfCrm");
   const CRM_ATUAL = "<%= crmAtual %>";
 
-  async function carregarEmpresa(codFilial) {
-    if (!codFilial) { inpEmpresa.value = ""; return; }
-    const res = await fetch(`/api/empresa/${codFilial}`);
-    const data = await res.json();
-    inpEmpresa.value = data.empresa || "";
+  function sincronizarEmpresa() {
+    idEmpresa.value = selFilial.value || "";
   }
 
   async function carregarSetores(codFilial, setorSelecionadoAtual) {
@@ -191,7 +188,7 @@
   }
 
   selFilial.addEventListener("change", () => {
-    carregarEmpresa(selFilial.value);
+    sincronizarEmpresa();
     carregarSetores(selFilial.value, null);
     selTipoPlantao.innerHTML = '<option value="">Selecione setor</option>';
     selMedico.innerHTML = '<option value="">Selecione tipo de plantão</option>';
@@ -223,6 +220,7 @@
   const especialidadeInicial = "<%= especialidadeAtual %>";
 
   (async function initEdicao() {
+    sincronizarEmpresa();
     if (!filialInicial) return;
     await carregarSetores(filialInicial, setorInicial);
     await carregarTiposPlantao(filialInicial, setorInicial, tipoInicial);

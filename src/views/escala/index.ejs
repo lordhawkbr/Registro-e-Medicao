@@ -44,53 +44,55 @@
   </div>
 </form>
 
-<table class="tabela">
-  <thead>
-    <tr>
-      <th>ID</th>
-      <th>Data</th>
-      <th>Horário</th>
-      <th>Filial</th>
-      <th>Setor</th>
-      <th>Médico</th>
-      <th>Conclusão</th>
-      <th></th>
-    </tr>
-  </thead>
-  <tbody>
-    <% if (plantoes.length === 0) { %>
-      <tr><td colspan="8">Nenhum plantão encontrado.</td></tr>
-    <% } %>
-    <% plantoes.forEach(p => { %>
+<div class="tabela-scroll">
+  <table class="tabela">
+    <thead>
       <tr>
-        <td><%= p.IDPLANTAO %></td>
-        <td><%= p.DATA_INPUT ? p.DATA_INPUT.split('-').reverse().join('/') : '' %></td>
-        <td class="col-horario"><%= p.HORARIO_FORMATADO %></td>
-        <td><%= p.FILIAL_NOME %></td>
-        <td><%= p.SETOR_NOME %></td>
-        <td>
-          <% if (p.MEDICO_NOME) { %>
-            <div><%= p.MEDICO_NOME %></div>
-            <div class="muted"><%= p.CRM_ESCALADO %></div>
-          <% } else { %>
-            <%= p.CRM_ESCALADO %>
-          <% } %>
-        </td>
-        <td>
-          <span class="badge badge-<%= p.CONCLUSAO.classe %>"><%= p.CONCLUSAO.label %></span>
-          <div class="muted" style="margin-top:4px;"><%= p.STATUS %></div>
-        </td>
-        <td class="col-acoes">
-          <% if (p.PODE_EDITAR) { %>
-            <a href="/escala/<%= p.IDPLANTAO %>/editar">Editar</a>
-            <form method="post" action="/escala/<%= p.IDPLANTAO %>?_method=DELETE" style="display:inline" onsubmit="return confirm('Cancelar este plantão?')">
-              <button type="submit" class="link-danger">Cancelar</button>
-            </form>
-          <% } else { %>
-            <span class="muted">—</span>
-          <% } %>
-        </td>
+        <th>ID</th>
+        <th>Data</th>
+        <th>Horário</th>
+        <th>Filial</th>
+        <th>Setor</th>
+        <th>Médico</th>
+        <th>Conclusão</th>
+        <th></th>
       </tr>
-    <% }) %>
-  </tbody>
-</table>
+    </thead>
+    <tbody>
+      <% if (plantoes.length === 0) { %>
+        <tr><td colspan="8">Nenhum plantão encontrado.</td></tr>
+      <% } %>
+      <% plantoes.forEach(p => { %>
+        <tr>
+          <td><%= p.IDPLANTAO %></td>
+          <td><%= p.DATA_INPUT ? p.DATA_INPUT.split('-').reverse().join('/') : '' %></td>
+          <td class="col-horario"><%= p.HORARIO_FORMATADO %></td>
+          <td><%= p.FILIAL_NOME %></td>
+          <td><%= p.SETOR_NOME %></td>
+          <td>
+            <% if (p.MEDICO_NOME) { %>
+              <div><%= p.MEDICO_NOME %></div>
+              <div class="muted"><%= p.CRM_ESCALADO %></div>
+            <% } else { %>
+              <%= p.CRM_ESCALADO %>
+            <% } %>
+          </td>
+          <td>
+            <span class="badge badge-<%= p.CONCLUSAO.classe %>"><%= p.CONCLUSAO.label %></span>
+            <div class="muted" style="margin-top:4px;"><%= p.STATUS %></div>
+          </td>
+          <td class="col-acoes">
+            <% if (p.PODE_EDITAR) { %>
+              <a href="/escala/<%= p.IDPLANTAO %>/editar">Editar</a>
+              <form method="post" action="/escala/<%= p.IDPLANTAO %>?_method=DELETE" style="display:inline" onsubmit="return confirm('Cancelar este plantão?')">
+                <button type="submit" class="link-danger">Cancelar</button>
+              </form>
+            <% } else { %>
+              <span class="muted">—</span>
+            <% } %>
+          </td>
+        </tr>
+      <% }) %>
+    </tbody>
+  </table>
+</div>

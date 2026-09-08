@@ -110,6 +110,26 @@ function chaveData(valor) {
   return formatarDataInput(valor);
 }
 
+function minutosDesdeMeiaNoite(hora) {
+  const { h, m } = extrairHoraMinuto(hora);
+  return h * 60 + m;
+}
+
+function intervaloPlantaoMs(data, horaInicio, horaFim) {
+  const inicio = montarDateTimePlantao(data, horaInicio);
+  const fimData = dataFimPlantao(data, horaInicio, horaFim);
+  const fim = montarDateTimePlantao(fimData, horaFim);
+  if (!inicio || !fim) return null;
+  return { inicio: inicio.getTime(), fim: fim.getTime() };
+}
+
+function horariosSobrepostos(dataA, iniA, fimA, dataB, iniB, fimB) {
+  const a = intervaloPlantaoMs(dataA, iniA, fimA);
+  const b = intervaloPlantaoMs(dataB, iniB, fimB);
+  if (!a || !b) return false;
+  return a.inicio < b.fim && b.inicio < a.fim;
+}
+
 module.exports = {
   extrairHoraMinuto,
   formatarHoraCurta,
@@ -121,5 +141,8 @@ module.exports = {
   dataFimPlantao,
   formatarPeriodoPlantao,
   chaveData,
+  minutosDesdeMeiaNoite,
+  intervaloPlantaoMs,
+  horariosSobrepostos,
   DIAS_SEMANA
 };
