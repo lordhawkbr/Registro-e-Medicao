@@ -73,8 +73,11 @@ body.body-admin .container.container-lista {
 
 body.body-admin .container.container-form {
   height: auto;
-  overflow: visible;
+  overflow-x: hidden;
+  overflow-y: auto;
   max-width: 920px;
+  width: 100%;
+  box-sizing: border-box;
   padding-bottom: 40px;
 }
 
@@ -127,30 +130,39 @@ body.body-admin .container-lista .filtros-card {
 
 .acoes-btns {
   display: inline-flex;
-  gap: 6px;
-  flex-wrap: wrap;
-  align-items: center;
+  align-items: stretch;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid #c7d2d0;
+  background: #fff;
+  flex-wrap: nowrap;
+}
+
+.acoes-btns form {
+  display: contents;
 }
 
 .btn-acao {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 4px;
-  padding: 6px 10px;
-  border-radius: 999px;
+  padding: 7px 10px;
+  border-radius: 0;
   font-size: 12px;
   font-weight: 700;
   text-decoration: none;
-  border: 1px solid transparent;
+  border: none;
   cursor: pointer;
   font-family: inherit;
   line-height: 1;
+  margin: 0;
 }
 
 .btn-editar {
   color: #1d4ed8;
   background: #eff6ff;
-  border-color: #bfdbfe;
+  border-right: 1px solid #bfdbfe;
 }
 
 .btn-editar:hover { background: #dbeafe; }
@@ -158,7 +170,6 @@ body.body-admin .container-lista .filtros-card {
 .btn-cancelar {
   color: #b91c1c;
   background: #fef2f2;
-  border-color: #fecaca;
 }
 
 .btn-cancelar:hover { background: #fee2e2; }
@@ -348,25 +359,35 @@ h1, h2 {
   width: 100%;
   max-width: 880px;
   margin: 0 auto;
+  overflow: hidden;
 }
 
 .form-escala {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px 12px;
   width: 100%;
-  max-width: none;
+  max-width: 100%;
+  box-sizing: border-box;
   background: rgba(255, 255, 255, 0.92);
   border: 1px solid var(--line);
   border-radius: 16px;
   padding: 16px;
   box-shadow: var(--shadow);
+  overflow: hidden;
 }
 
 .form-grid.form-escala {
-  max-width: none;
+  max-width: 100%;
 }
 
-.form-escala .span-2 { grid-column: span 2; }
+.form-escala > label,
+.form-escala .form-row-horario > label,
+.form-escala .span-3 {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.form-escala .span-2 { grid-column: span 2; min-width: 0; }
 .form-escala .span-3 { grid-column: 1 / -1; }
 
 .form-row-horario {
@@ -374,10 +395,16 @@ h1, h2 {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px 12px;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .form-escala input,
 .form-escala select {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
   padding: 8px 10px;
   font-size: 14px;
 }

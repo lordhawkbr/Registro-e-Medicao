@@ -83,7 +83,7 @@
             </td>
             <td class="col-acoes">
               <% if (p.PODE_EDITAR) { %>
-                <div class="acoes-btns">
+                <div class="acoes-btns" role="group" aria-label="Ações do plantão">
                   <a class="btn-acao btn-editar" href="/escala/<%= p.IDPLANTAO %>/editar" title="Editar">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 20h4.5L19 9.5 14.5 5 4 15.5V20z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M13 6.5 17.5 11" stroke="currentColor" stroke-width="2"/></svg>
                     Editar
