@@ -9,8 +9,9 @@ async function novo(req, res, next) {
     // Só permite justificativa após passar da tolerância
     if (plantao) {
       const registroModel = require("../models/registroAcesso.model");
+      const crm = req.session.crm;
       const registros = await registroModel.registrosDoPlantao(plantao.IDPLANTAO);
-      const avaliacao = registroModel.avaliarJanela(plantao, registros);
+      const avaliacao = registroModel.avaliarJanela(plantao, registros, crm);
       if (!avaliacao.podeJustificar && plantao.STATUS !== "PENDENTE_JUSTIFICATIVA") {
         return res.render("justificativa/form", {
           plantao: null,
@@ -29,13 +30,13 @@ async function criar(req, res, next) {
   try {
     const crm = req.session.crm;
     const plantao = await escalaModel.buscarPorId(req.body.idPlantao);
-    if (!plantao || plantao.CRM_ESCALADO !== crm) {
+    if (!plantao || !require("../utils/crm").crmPertenceAoPlantao(plantao.CRM_ESCALADO, crm)) {
       return res.status(403).send("Este plantão não pertence ao médico logado.");
     }
 
     const registroModel = require("../models/registroAcesso.model");
     const registros = await registroModel.registrosDoPlantao(plantao.IDPLANTAO);
-    const avaliacao = registroModel.avaliarJanela(plantao, registros);
+    const avaliacao = registroModel.avaliarJanela(plantao, registros, crm);
     if (!avaliacao.podeJustificar && plantao.STATUS !== "PENDENTE_JUSTIFICATIVA") {
       return res.render("justificativa/form", {
         plantao,
@@ -64,7 +65,11 @@ async function index(req, res, next) {
 async function pendentes(req, res, next) {
   try {
     const justificativas = await justificativaModel.listarPendentes();
-    res.render("justificativa/pendentes", { justificativas });
+    res.render("justificativa/pendentes", {
+      justificativas,
+      containerClass: "container-lista",
+      adminNav: "justificativas"
+    });
   } catch (err) {
     next(err);
   }

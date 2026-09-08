@@ -12,11 +12,12 @@
 <body class="<%= typeof bodyClass !== 'undefined' ? bodyClass : (typeof sessionTipo !== 'undefined' && sessionTipo === 'MEDICO' ? 'body-medico' : 'body-admin') %>">
   <% const isMedico = typeof sessionTipo !== 'undefined' && sessionTipo === 'MEDICO'; %>
   <% if (!isMedico) { %>
+    <% const navAtiva = typeof adminNav !== 'undefined' ? adminNav : ''; %>
     <header class="topbar">
-      <strong>Escala Médica</strong>
-      <nav>
-        <a href="/escala">Plantões</a>
-        <a href="/justificativa/pendentes">Justificativas</a>
+      <strong class="topbar-brand">Escala Médica</strong>
+      <nav class="topbar-nav" aria-label="Administração">
+        <a class="topbar-link <%= navAtiva === 'plantoes' ? 'is-active' : '' %>" href="/escala">Plantões</a>
+        <a class="topbar-link <%= navAtiva === 'justificativas' ? 'is-active' : '' %>" href="/justificativa/pendentes">Justificativas</a>
       </nav>
     </header>
   <% } %>

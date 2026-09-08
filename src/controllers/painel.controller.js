@@ -71,9 +71,10 @@ async function index(req, res, next) {
 
     const plantoesComRegistros = [];
     for (const p of todosPlantoes) {
-      const registros = await registroModel.registrosDoPlantao(p.IDPLANTAO);
-      const avaliacao = registroModel.avaliarJanela(p, registros);
-      plantoesComRegistros.push({ plantao: p, registros, avaliacao });
+      const registrosTodos = await registroModel.registrosDoPlantao(p.IDPLANTAO);
+      const avaliacao = registroModel.avaliarJanela(p, registrosTodos, crm);
+      const registros = registrosTodos.filter(r => String(r.CRM || "").toUpperCase() === String(crm).toUpperCase());
+      plantoesComRegistros.push({ plantao: p, registros, avaliacao, registrosTodos });
     }
 
     const calendario = montarCalendario(plantoesComRegistros, mes);
@@ -82,7 +83,11 @@ async function index(req, res, next) {
     );
 
     const plantoesAbertos = plantoesComRegistros
-      .filter(({ plantao }) => plantao.STATUS === "EM_ANDAMENTO")
+      .filter(({ plantao, registros }) => {
+        const temEntrada = registros.some(r => r.TIPO === "ENTRADA");
+        const temSaida = registros.some(r => r.TIPO === "SAIDA");
+        return temEntrada && !temSaida && plantao.STATUS !== "CANCELADO";
+      })
       .sort((a, b) => {
         const da = a.plantao.DATA_CHAVE || "";
         const db = b.plantao.DATA_CHAVE || "";

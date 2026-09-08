@@ -33,6 +33,11 @@ app.use(session({
 app.use((req, res, next) => {
   res.locals.sessionTipo = req.session ? req.session.tipoUsuario : null;
   res.locals.sessionNome = req.session ? req.session.nome : null;
+  if (req.path.startsWith("/justificativa/pendentes")) {
+    res.locals.adminNav = "justificativas";
+  } else if (req.path.startsWith("/escala")) {
+    res.locals.adminNav = "plantoes";
+  }
   next();
 });
 

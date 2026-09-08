@@ -16,7 +16,8 @@ async function index(req, res, next) {
       plantoes,
       filtros,
       filiais,
-      containerClass: "container-lista"
+      containerClass: "container-lista",
+      adminNav: "plantoes"
     });
   } catch (err) {
     next(err);

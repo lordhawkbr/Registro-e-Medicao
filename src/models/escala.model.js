@@ -9,6 +9,7 @@ const {
   horariosSobrepostos
 } = require("../utils/horario");
 const { statusConclusao, podeEditarOuCancelar, limparNomeFilial } = require("../utils/statusPlantao");
+const { montarCrmEscalado, parseCrmLista, sqlFiltroCrmEscalado } = require("../utils/crm");
 
 const SELECT_PLANTAO_ENRIQUECIDO = `
   SELECT
@@ -18,7 +19,6 @@ const SELECT_PLANTAO_ENRIQUECIDO = `
     t.DESCRICAO AS TIPO_DESCRICAO,
     t.TURNO AS TIPO_TURNO,
     t.TIPO AS TIPO_TURNO_TIPO,
-    m.NOMECOMPLETO AS MEDICO_NOME,
     (
       SELECT COUNT(*) FROM REGISTROACESSO r WHERE r.IDPLANTAO = e.IDPLANTAO
     ) AS QTD_REGISTROS,
@@ -33,13 +33,12 @@ const SELECT_PLANTAO_ENRIQUECIDO = `
   LEFT JOIN GFILIAL f ON f.CODFILIAL = e.CODFILIAL
   LEFT JOIN GCCUSTO c ON c.CODCCUSTO = e.CODCCUSTO
   LEFT JOIN ZMDTIPOPLANTAOMEDICO2 t ON t.ID = e.CODTIPOPLANTAO
-  LEFT JOIN ZMDMEDICOSPJ m
-    ON LTRIM(RTRIM(CAST(m.CRM AS VARCHAR(20)))) + LTRIM(RTRIM(CAST(m.UFCRM AS VARCHAR(5)))) = e.CRM_ESCALADO
 `;
 
 function normalizarPlantao(row) {
   if (!row) return row;
   const conclusao = statusConclusao(row);
+  const crmLista = parseCrmLista(row.CRM_ESCALADO);
   return {
     ...row,
     DATA_INPUT: formatarDataInput(row.DATA),
@@ -52,10 +51,51 @@ function normalizarPlantao(row) {
     TIPO_NOME: row.TIPO_DESCRICAO
       ? `${row.TIPO_DESCRICAO}${row.TIPO_TURNO ? ` (${row.TIPO_TURNO}${row.TIPO_TURNO_TIPO ? "/" + row.TIPO_TURNO_TIPO : ""})` : ""}`
       : (row.CODTIPOPLANTAO != null ? `Tipo #${row.CODTIPOPLANTAO}` : ""),
-    MEDICO_NOME: row.MEDICO_NOME ? String(row.MEDICO_NOME).trim() : null,
+    CRM_LISTA: crmLista,
+    MEDICO_LABEL: crmLista.length > 1
+      ? `${crmLista.length} médicos`
+      : (crmLista[0] || row.CRM_ESCALADO),
     CONCLUSAO: conclusao,
     PODE_EDITAR: podeEditarOuCancelar(row)
   };
+}
+
+async function enriquecerNomesMedicos(plantoes) {
+  const lista = Array.isArray(plantoes) ? plantoes.filter(Boolean) : [];
+  if (!lista.length) return lista;
+
+  const todosCrm = [...new Set(lista.flatMap(p => p.CRM_LISTA || parseCrmLista(p.CRM_ESCALADO)))];
+  if (!todosCrm.length) return lista;
+
+  const pool = await getPool();
+  const request = pool.request();
+  const params = todosCrm.map((crm, i) => {
+    request.input(`crm${i}`, sql.VarChar, crm);
+    return `@crm${i}`;
+  });
+
+  const result = await request.query(`
+    SELECT LTRIM(RTRIM(CAST(CRM AS VARCHAR(20)))) + LTRIM(RTRIM(CAST(UFCRM AS VARCHAR(5)))) AS CRM_COMPLETO,
+           NOMECOMPLETO
+    FROM ZMDMEDICOSPJ
+    WHERE LTRIM(RTRIM(CAST(CRM AS VARCHAR(20)))) + LTRIM(RTRIM(CAST(UFCRM AS VARCHAR(5)))) IN (${params.join(",")})
+  `);
+
+  const mapa = {};
+  result.recordset.forEach(r => {
+    mapa[String(r.CRM_COMPLETO || "").toUpperCase()] = String(r.NOMECOMPLETO || "").trim();
+  });
+
+  return lista.map(p => {
+    const crmLista = p.CRM_LISTA || parseCrmLista(p.CRM_ESCALADO);
+    const nomes = crmLista.map(c => mapa[c.toUpperCase()] || c);
+    return {
+      ...p,
+      MEDICOS: crmLista.map((crm, i) => ({ crm, nome: nomes[i] })),
+      MEDICO_NOME: nomes[0] || null,
+      MEDICO_LABEL: nomes.length > 1 ? nomes.join(" · ") : (nomes[0] || p.CRM_ESCALADO)
+    };
+  });
 }
 
 async function listar(filtros = {}) {
@@ -81,7 +121,7 @@ async function listar(filtros = {}) {
     ${where}
     ORDER BY e.DATA DESC, e.HORAINICIO DESC
   `);
-  return result.recordset.map(normalizarPlantao);
+  return enriquecerNomesMedicos(result.recordset.map(normalizarPlantao));
 }
 
 async function buscarPorId(idPlantao) {
@@ -92,7 +132,8 @@ async function buscarPorId(idPlantao) {
       ${SELECT_PLANTAO_ENRIQUECIDO}
       WHERE e.IDPLANTAO = @id
     `);
-  return normalizarPlantao(result.recordset[0]);
+  const [plantao] = await enriquecerNomesMedicos([normalizarPlantao(result.recordset[0])]);
+  return plantao || null;
 }
 
 async function criar(dados, usuario) {
@@ -119,7 +160,7 @@ async function criar(dados, usuario) {
     .input("horaFim", sql.VarChar, dados.horaFim)
     .input("idEspecialidade", sql.Int, parseIdEspecialidade(dados.idEspecialidade || dados.especialidade))
     .input("codTipoPlantao", sql.Int, dados.codTipoPlantao)
-    .input("crmEscalado", sql.VarChar, crmEscalado)
+    .input("crmEscalado", sql.VarChar(100), crmEscalado)
     .input("dataExpiracao", sql.DateTime, dataExpiracao)
     .input("criadoPor", sql.VarChar, usuario)
     .query(`
@@ -166,7 +207,7 @@ async function atualizar(idPlantao, dados) {
     .input("horaFim", sql.VarChar, dados.horaFim)
     .input("idEspecialidade", sql.Int, parseIdEspecialidade(dados.idEspecialidade || dados.especialidade))
     .input("codTipoPlantao", sql.Int, dados.codTipoPlantao)
-    .input("crmEscalado", sql.VarChar, crmEscalado)
+    .input("crmEscalado", sql.VarChar(100), crmEscalado)
     .input("dataExpiracao", sql.DateTime, dataExpiracao)
     .query(`
       UPDATE ESCALAMEDICA SET
@@ -179,22 +220,31 @@ async function atualizar(idPlantao, dados) {
 }
 
 async function buscarConflitosHorario({ crmEscalado, data, horaInicio, horaFim, excluirId = null }) {
-  const pool = await getPool();
-  const request = pool.request()
-    .input("crm", sql.VarChar, crmEscalado)
-    .input("data", sql.Date, data);
+  const crms = parseCrmLista(crmEscalado);
+  if (!crms.length) return [];
 
+  const pool = await getPool();
+  const request = pool.request().input("data", sql.Date, data);
   let whereExtra = "";
   if (excluirId) {
     request.input("excluirId", sql.Int, excluirId);
     whereExtra = "AND e.IDPLANTAO <> @excluirId";
   }
 
-  // Busca plantões do médico no dia anterior, atual e seguinte (virada de turno)
+  const orCrm = crms.map((crm, i) => {
+    request.input(`crm${i}`, sql.VarChar, crm);
+    return `(
+      e.CRM_ESCALADO = @crm${i}
+      OR e.CRM_ESCALADO LIKE @crm${i} + '|%'
+      OR e.CRM_ESCALADO LIKE '%|' + @crm${i} + '|%'
+      OR e.CRM_ESCALADO LIKE '%|' + @crm${i}
+    )`;
+  }).join(" OR ");
+
   const result = await request.query(`
-    SELECT e.IDPLANTAO, e.DATA, e.HORAINICIO, e.HORAFIM, e.STATUS, e.CODFILIAL, e.CODCCUSTO
+    SELECT e.IDPLANTAO, e.DATA, e.HORAINICIO, e.HORAFIM, e.STATUS, e.CODFILIAL, e.CODCCUSTO, e.CRM_ESCALADO
     FROM ESCALAMEDICA e
-    WHERE e.CRM_ESCALADO = @crm
+    WHERE (${orCrm})
       AND e.STATUS <> 'CANCELADO'
       AND CAST(e.DATA AS DATE) BETWEEN DATEADD(day, -1, @data) AND DATEADD(day, 1, @data)
       ${whereExtra}
@@ -217,20 +267,13 @@ async function garantirSemConflito(opts) {
   }).join(", ");
 
   throw new Error(
-    `Este médico já possui plantão no mesmo horário: ${detalhe}. Escolha outro horário ou outro médico.`
+    `Há médico(s) com plantão no mesmo horário: ${detalhe}. Escolha outro horário ou outros médicos.`
   );
 }
 
 function parseIdEspecialidade(valor) {
   const n = parseInt(valor, 10);
   return Number.isFinite(n) ? n : 0;
-}
-
-function montarCrmEscalado(dados) {
-  const crm = String(dados.crmEscalado || dados.crm || "").trim();
-  const uf = String(dados.ufCrm || dados.ufcrm || "").trim().toUpperCase();
-  if (uf && !crm.toUpperCase().endsWith(uf)) return `${crm}${uf}`;
-  return crm;
 }
 
 async function cancelar(idPlantao) {
@@ -254,4 +297,12 @@ function calcularDataExpiracao(data, horaFim) {
   return base;
 }
 
-module.exports = { listar, buscarPorId, criar, atualizar, cancelar, normalizarPlantao };
+module.exports = {
+  listar,
+  buscarPorId,
+  criar,
+  atualizar,
+  cancelar,
+  normalizarPlantao,
+  sqlFiltroCrmEscalado
+};

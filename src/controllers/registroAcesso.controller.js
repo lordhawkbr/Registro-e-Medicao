@@ -1,6 +1,7 @@
 const registroModel = require("../models/registroAcesso.model");
 const escalaModel = require("../models/escala.model");
 const { formatarDataInput } = require("../utils/horario");
+const { crmPertenceAoPlantao } = require("../utils/crm");
 
 async function index(req, res, next) {
   try {
@@ -10,8 +11,9 @@ async function index(req, res, next) {
 
     const plantoesComStatus = [];
     for (const p of plantoes) {
-      const registros = await registroModel.registrosDoPlantao(p.IDPLANTAO);
-      const avaliacao = registroModel.avaliarJanela(p, registros);
+      const registrosTodos = await registroModel.registrosDoPlantao(p.IDPLANTAO);
+      const avaliacao = registroModel.avaliarJanela(p, registrosTodos, crm);
+      const registros = registrosTodos.filter(r => String(r.CRM || "").toUpperCase() === String(crm).toUpperCase());
       plantoesComStatus.push({ plantao: p, registros, avaliacao });
     }
 
@@ -35,12 +37,12 @@ async function bater(req, res, next) {
     const idPlantao = req.params.id;
 
     const plantao = await escalaModel.buscarPorId(idPlantao);
-    if (!plantao || plantao.CRM_ESCALADO !== crm) {
+    if (!plantao || !crmPertenceAoPlantao(plantao.CRM_ESCALADO, crm)) {
       return res.status(403).send("Este plantão não pertence ao médico logado.");
     }
 
     const registros = await registroModel.registrosDoPlantao(idPlantao);
-    const avaliacao = registroModel.avaliarJanela(plantao, registros);
+    const avaliacao = registroModel.avaliarJanela(plantao, registros, crm);
 
     if (!avaliacao.podeIniciar) {
       return res.redirect(`/registro-acesso?erro=fora_da_janela&plantao=${idPlantao}&data=${plantao.DATA_INPUT || ""}`);
