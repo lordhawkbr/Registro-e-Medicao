@@ -37,51 +37,7 @@
 
   <div class="<%= plantoes.length > 1 ? 'plantao-lista-compacta' : '' %> medico-lista-scroll">
     <% plantoes.forEach(({ plantao, registros, avaliacao }) => { %>
-      <article class="plantao-tile <%= plantoes.length > 1 ? 'plantao-tile-compact' : '' %>">
-        <div class="plantao-tile-top">
-          <div>
-            <strong>Plantão #<%= plantao.IDPLANTAO %></strong>
-            <p class="plantao-horario"><%= plantao.HORARIO_FORMATADO %></p>
-            <p class="muted">Filial <%= plantao.CODFILIAL %> · <%= plantao.SETOR_NOME %></p>
-            <% if (plantoes.length === 1 && plantao.TIPO_NOME) { %><p class="muted"><%= plantao.TIPO_NOME %></p><% } %>
-          </div>
-          <span class="badge badge-<%= plantao.CONCLUSAO.classe %>"><%= plantao.CONCLUSAO.label %></span>
-        </div>
-
-        <ul class="lista-registros <%= plantoes.length > 1 ? 'lista-registros-compact' : '' %>">
-          <% if (registros.length === 0) { %>
-            <li>Sem batidas ainda</li>
-          <% } %>
-          <% registros.forEach(r => { %>
-            <li><%= r.TIPO %> às <%= r.HORABATIDA_FMT || r.HORABATIDA %></li>
-          <% }) %>
-        </ul>
-
-        <% if (plantao.STATUS === "CANCELADO" || (avaliacao && avaliacao.concluidoParaMedico)) { %>
-          <p class="muted">Sem ações disponíveis</p>
-        <% } else if (plantao.STATUS !== "CONCLUIDO") { %>
-          <div class="plantao-actions <%= plantoes.length > 1 ? 'plantao-actions-compact' : '' %>">
-            <% if (avaliacao.podeIniciar) { %>
-              <form method="post" action="/registro-acesso/<%= plantao.IDPLANTAO %>/bater">
-                <button type="submit" class="btn btn-primary <%= plantoes.length > 1 ? '' : 'btn-block' %>">
-                  Registrar <%= avaliacao.proximoTipo %>
-                </button>
-              </form>
-            <% } else { %>
-              <button type="button" class="btn <%= plantoes.length > 1 ? '' : 'btn-block' %>" disabled>
-                <% if (avaliacao.antesDaJanela) { %>
-                  <%= avaliacao.proximoTipo %> ainda não liberado (~<%= avaliacao.diffMin %> min)
-                <% } else { %>
-                  <%= avaliacao.proximoTipo %> fora da janela (+<%= avaliacao.diffMin %> min)
-                <% } %>
-              </button>
-              <% if (avaliacao.podeJustificar) { %>
-                <a class="btn btn-warn <%= plantoes.length > 1 ? '' : 'btn-block' %>" href="/justificativa/novo?idPlantao=<%= plantao.IDPLANTAO %>">Justificar</a>
-              <% } %>
-            <% } %>
-          </div>
-        <% } %>
-      </article>
+      <%- include('../partials/plantaoTile', { plantao, registros, avaliacao, compacto: plantoes.length > 1 }) %>
     <% }) %>
   </div>
 </div>

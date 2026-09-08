@@ -1055,6 +1055,42 @@ body.body-medico .container-medico {
   line-height: 1.35;
 }
 
+.plantao-titulo {
+  margin: 0;
+  font-family: var(--font);
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: 1.3;
+}
+
+.plantao-titulo-hora {
+  display: inline;
+  color: var(--brand-dark);
+  font-size: 1.05em;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.plantao-meta {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--ink);
+  line-height: 1.4;
+}
+
+.plantao-meta strong {
+  font-weight: 800;
+}
+
+.plantao-tile-compact .plantao-titulo {
+  font-size: 0.95rem;
+}
+
+.plantao-tile-compact .plantao-titulo-hora {
+  font-size: 1.08em;
+}
+
 .plantao-actions {
   display: flex;
   flex-direction: column;

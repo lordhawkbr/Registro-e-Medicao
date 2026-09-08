@@ -35,13 +35,34 @@ const configFluig = {
 
 let poolPromise;
 let poolFluigPromise;
+let schemaReadyPromise;
+
+async function ensureEscalaSchema(pool) {
+  // Amplia CRM_ESCALADO para caber até 3 médicos (CRM+UF|...). Produção pode ainda estar em VARCHAR(20).
+  await pool.request().query(`
+    IF COL_LENGTH('dbo.ESCALAMEDICA', 'CRM_ESCALADO') IS NOT NULL
+       AND COL_LENGTH('dbo.ESCALAMEDICA', 'CRM_ESCALADO') < 200
+    BEGIN
+      ALTER TABLE dbo.ESCALAMEDICA ALTER COLUMN CRM_ESCALADO VARCHAR(200) NOT NULL;
+    END
+  `);
+}
 
 function getPool() {
   if (!poolPromise) {
     poolPromise = new sql.ConnectionPool(config)
       .connect()
-      .then(pool => {
+      .then(async pool => {
         console.log("Conectado ao SQL Server (banco principal)");
+        if (!schemaReadyPromise) {
+          schemaReadyPromise = ensureEscalaSchema(pool)
+            .then(() => console.log("Schema ESCALAMEDICA verificado (CRM_ESCALADO)"))
+            .catch(err => {
+              schemaReadyPromise = null;
+              console.error("Falha ao ajustar CRM_ESCALADO:", err.message);
+            });
+        }
+        await schemaReadyPromise;
         return pool;
       })
       .catch(err => {
@@ -70,4 +91,4 @@ function getPoolFluig() {
   return poolFluigPromise;
 }
 
-module.exports = { sql, getPool, getPoolFluig };
+module.exports = { sql, getPool, getPoolFluig, ensureEscalaSchema };
