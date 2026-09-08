@@ -1,0 +1,122 @@
+<div class="page-escala-lista page-relatorio">
+  <div class="page-header">
+    <h1>Relatório de registros</h1>
+    <div class="page-header-actions">
+      <a class="btn btn-primary" href="/relatorio/exportar<%= exportQuery %>">Exportar CSV</a>
+      <form method="post" action="/logout"><button class="btn">Sair</button></form>
+    </div>
+  </div>
+
+  <form method="get" class="filtros filtros-card" action="/relatorio">
+    <label>
+      Data
+      <input type="date" name="data" value="<%= filtros.data || '' %>">
+    </label>
+    <label>
+      Filial
+      <select name="codFilial">
+        <option value="">Todas</option>
+        <% filiais.forEach(f => { %>
+          <option value="<%= f.codFilial %>" <%= String(filtros.codFilial || '') === String(f.codFilial) ? 'selected' : '' %>>
+            <%= f.nome %>
+          </option>
+        <% }) %>
+      </select>
+    </label>
+    <label>
+      Status
+      <select name="status">
+        <option value="">Todos</option>
+        <% [
+          ["ABERTO","Aberto"],
+          ["EM_ANDAMENTO","Em andamento"],
+          ["CONCLUIDO","Concluído"],
+          ["CANCELADO","Cancelado"],
+          ["PENDENTE_JUSTIFICATIVA","Justificativa pendente"]
+        ].forEach(([v,l]) => { %>
+          <option value="<%= v %>" <%= filtros.status === v ? "selected" : "" %>><%= l %></option>
+        <% }) %>
+      </select>
+    </label>
+    <div class="filtros-actions">
+      <button type="submit" class="btn btn-primary">Filtrar</button>
+      <a class="btn" href="/relatorio">Limpar</a>
+    </div>
+  </form>
+
+  <div class="relatorio-resumo" aria-label="Resumo do relatório">
+    <span><strong><%= resumo.plantoes %></strong> plantão(ões)</span>
+    <span><strong><%= resumo.registrosDentroPrazo %></strong> dentro do prazo</span>
+    <span><strong><%= resumo.registrosForaPrazo %></strong> fora do prazo</span>
+    <span><strong><%= resumo.justificativas %></strong> justificativa(s)</span>
+    <span><strong><%= resumo.semAcao %></strong> sem ação</span>
+  </div>
+
+  <div class="tabela-scroll">
+    <table class="tabela tabela-plantoes tabela-relatorio">
+      <thead>
+        <tr>
+          <th class="col-id">Plantão</th>
+          <th class="col-data">Data</th>
+          <th class="col-horario">Horário</th>
+          <th class="col-filial">Filial</th>
+          <th class="col-setor">Setor</th>
+          <th class="col-medico">Médico</th>
+          <th>Tipo</th>
+          <th>Detalhe</th>
+          <th>Evento</th>
+          <th class="col-conclusao">Situação</th>
+          <th>Conclusão</th>
+          <th>Motivo</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if (linhas.length === 0) { %>
+          <tr><td colspan="12">Nenhum registro encontrado para os filtros informados.</td></tr>
+        <% } %>
+        <% linhas.forEach(l => { %>
+          <tr class="relatorio-row relatorio-row-<%= l.tipoEvento.toLowerCase() %>">
+            <td class="col-id"><%= l.idPlantao %></td>
+            <td class="col-data"><%= l.dataFmt %></td>
+            <td class="col-horario" title="<%= l.horarioCompleto %>"><%= l.horario %></td>
+            <td class="col-filial"><%= l.filial %></td>
+            <td><%= l.setor %></td>
+            <td>
+              <div class="cell-medico">
+                <div class="cell-nome"><%= l.medicoNome %></div>
+                <div class="muted"><%= l.crm %></div>
+              </div>
+            </td>
+            <td>
+              <span class="tag tag-tipo-<%= l.tipoEvento.toLowerCase() %>"><%= l.tipoEventoLabel %></span>
+            </td>
+            <td><%= l.tipoDetalheLabel %></td>
+            <td>
+              <% if (l.dataEvento || l.horaEvento) { %>
+                <%= [l.dataEvento, l.horaEvento].filter(Boolean).join(' ') %>
+                <% if (l.diffMin != null) { %>
+                  <div class="muted"><%= l.diffMin %> min</div>
+                <% } %>
+              <% } else { %>
+                <span class="muted">—</span>
+              <% } %>
+            </td>
+            <td class="col-conclusao">
+              <span class="tag tag-<%= l.situacaoClasse %>"><%= l.situacaoLabel %></span>
+            </td>
+            <td>
+              <span class="tag tag-<%= l.conclusao.classe %>"><%= l.conclusao.label %></span>
+            </td>
+            <td class="col-motivo" title="<%= l.motivo || '' %>">
+              <% if (l.motivo) { %>
+                <%= l.motivo.length > 80 ? l.motivo.slice(0, 80) + '…' : l.motivo %>
+              <% } else { %>
+                <span class="muted">—</span>
+              <% } %>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+</div>
