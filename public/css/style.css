@@ -330,6 +330,41 @@ body.body-admin .container-lista .filtros-card {
   border-color: #d1d5db;
 }
 
+.relatorio-resumo {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: -4px 0 16px;
+  align-items: center;
+}
+
+.tabela-plantoes .col-registros {
+  width: 220px;
+  white-space: normal;
+}
+
+.cell-registros {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 2.4em;
+  justify-content: center;
+}
+
+.registro-linha {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  line-height: 1.3;
+}
+
+.registro-tipo {
+  font-weight: 700;
+  color: var(--ink);
+}
+
 .container-medico {
   max-width: 480px;
   width: 100%;
@@ -1442,6 +1477,10 @@ body.body-medico .container-medico {
 
   .tabela-plantoes .col-acoes {
     width: 132px;
+  }
+
+  .tabela-plantoes .col-registros {
+    width: 160px;
   }
 
   .tag {

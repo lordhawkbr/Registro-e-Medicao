@@ -1,0 +1,272 @@
+<%
+  const filiaisSel = (filtros.codFiliais || []).map(String);
+  const statusSel = filtros.statuses || [];
+  const statusOpcoes = [
+    ["ABERTO", "Aberto"],
+    ["EM_ANDAMENTO", "Em andamento"],
+    ["CONCLUIDO", "Concluído"],
+    ["CANCELADO", "Cancelado"],
+    ["PENDENTE_JUSTIFICATIVA", "Justificativa pendente"]
+  ];
+  const labelFiliais = !filiaisSel.length
+    ? "Todas as filiais"
+    : (filiaisSel.length === 1
+      ? (filiais.find(f => String(f.codFilial) === filiaisSel[0]) || {}).nome || ("Filial " + filiaisSel[0])
+      : filiaisSel.length + " filiais");
+  const labelStatus = !statusSel.length
+    ? "Todos os status"
+    : (statusSel.length === 1
+      ? (statusOpcoes.find(([v]) => v === statusSel[0]) || [statusSel[0], statusSel[0]])[1]
+      : statusSel.length + " status");
+%>
+<div class="page-escala-lista">
+  <div class="page-header">
+    <h1>Relatório de registros</h1>
+    <div class="page-header-actions">
+      <a class="btn btn-primary" href="/relatorio/exportar<%= exportQuery %>">Exportar XLSX</a>
+      <form method="post" action="/logout"><button class="btn">Sair</button></form>
+    </div>
+  </div>
+
+  <form method="get" class="filtros filtros-card filtros-multi" id="formFiltrosRelatorio" action="/relatorio">
+    <label>
+      Data início
+      <input type="date" name="dataInicio" value="<%= filtros.dataInicio || '' %>">
+    </label>
+    <label>
+      Data fim
+      <input type="date" name="dataFim" value="<%= filtros.dataFim || '' %>">
+    </label>
+
+    <div class="filtro-campo">
+      <span class="filtro-label">Filiais</span>
+      <div class="msel" data-msel>
+        <button type="button" class="msel-toggle" aria-haspopup="listbox" aria-expanded="false">
+          <span class="msel-toggle-text"><%= labelFiliais %></span>
+          <span class="msel-caret" aria-hidden="true">▾</span>
+        </button>
+        <div class="msel-panel" hidden>
+          <label class="msel-option msel-all">
+            <input type="checkbox" data-msel-all <%= filiaisSel.length === 0 ? "checked" : "" %>>
+            <span>Todas</span>
+          </label>
+          <% filiais.forEach(f => { %>
+            <label class="msel-option">
+              <input type="checkbox" name="codFilial" value="<%= f.codFilial %>"
+                <%= filiaisSel.includes(String(f.codFilial)) ? "checked" : "" %>>
+              <span><%= f.nome %></span>
+            </label>
+          <% }) %>
+        </div>
+      </div>
+    </div>
+
+    <div class="filtro-campo">
+      <span class="filtro-label">Status</span>
+      <div class="msel" data-msel>
+        <button type="button" class="msel-toggle" aria-haspopup="listbox" aria-expanded="false">
+          <span class="msel-toggle-text"><%= labelStatus %></span>
+          <span class="msel-caret" aria-hidden="true">▾</span>
+        </button>
+        <div class="msel-panel" hidden>
+          <label class="msel-option msel-all">
+            <input type="checkbox" data-msel-all <%= statusSel.length === 0 ? "checked" : "" %>>
+            <span>Todos</span>
+          </label>
+          <% statusOpcoes.forEach(([v, l]) => { %>
+            <label class="msel-option">
+              <input type="checkbox" name="status" value="<%= v %>"
+                <%= statusSel.includes(v) ? "checked" : "" %>>
+              <span><%= l %></span>
+            </label>
+          <% }) %>
+        </div>
+      </div>
+    </div>
+
+    <div class="filtros-actions">
+      <button type="submit" class="btn btn-primary">Filtrar</button>
+      <a class="btn" href="/relatorio">Limpar</a>
+    </div>
+  </form>
+
+  <div class="relatorio-resumo" aria-label="Resumo do relatório">
+    <span class="tag tag-pendente_entrada"><%= resumo.plantoes %> plantão(ões)</span>
+    <span class="tag tag-registrado"><%= resumo.registrosDentroPrazo %> dentro do prazo</span>
+    <span class="tag tag-pendente_saida"><%= resumo.registrosForaPrazo %> fora do prazo</span>
+    <span class="tag tag-justificado"><%= resumo.justificativas %> justificativa(s)</span>
+    <span class="tag tag-cancelado"><%= resumo.semAcao %> sem ação</span>
+  </div>
+
+  <div class="tabela-scroll">
+    <table class="tabela tabela-plantoes">
+      <thead>
+        <tr>
+          <th class="col-id">ID</th>
+          <th class="col-data">Data</th>
+          <th class="col-horario">Horário</th>
+          <th class="col-filial">Filial</th>
+          <th class="col-setor">Setor</th>
+          <th class="col-medico">Médico(s)</th>
+          <th class="col-conclusao">Conclusão</th>
+          <th class="col-registros">Registros</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if (!plantoes.length) { %>
+          <tr><td colspan="8">Nenhum plantão encontrado.</td></tr>
+        <% } %>
+        <% plantoes.forEach(p => { %>
+          <tr>
+            <td class="col-id"><%= p.IDPLANTAO %></td>
+            <td class="col-data"><%= p.DATA_INPUT ? p.DATA_INPUT.split('-').reverse().join('/') : '' %></td>
+            <td class="col-horario" title="<%= p.HORARIO_FORMATADO %>"><%= p.HORARIO_CURTO || p.HORARIO_FORMATADO %></td>
+            <td class="col-filial"><%= p.CODFILIAL %></td>
+            <td class="col-setor"><%= p.SETOR_NOME %></td>
+            <td class="col-medico">
+              <% if (p.MEDICOS && p.MEDICOS.length) { %>
+                <% p.MEDICOS.forEach(m => { %>
+                  <div class="cell-medico">
+                    <div class="cell-nome"><%= m.nome %></div>
+                    <div class="muted"><%= m.crm %></div>
+                  </div>
+                <% }) %>
+              <% } else if (p.MEDICO_NOME) { %>
+                <div class="cell-medico">
+                  <div class="cell-nome"><%= p.MEDICO_NOME %></div>
+                  <div class="muted"><%= p.CRM_ESCALADO %></div>
+                </div>
+              <% } else { %>
+                <div class="cell-medico"><%= p.CRM_ESCALADO %></div>
+              <% } %>
+            </td>
+            <td class="col-conclusao">
+              <% if (p.MEDICOS && p.MEDICOS.length) { %>
+                <% p.MEDICOS.forEach(m => { %>
+                  <div class="cell-conclusao" title="<%= m.nome %>">
+                    <span class="tag tag-<%= (m.CONCLUSAO || p.CONCLUSAO).classe %>">
+                      <%= (m.CONCLUSAO || p.CONCLUSAO).label %>
+                    </span>
+                  </div>
+                <% }) %>
+              <% } else { %>
+                <div class="cell-conclusao">
+                  <span class="tag tag-<%= p.CONCLUSAO.classe %>"><%= p.CONCLUSAO.label %></span>
+                </div>
+              <% } %>
+            </td>
+            <td class="col-registros">
+              <% if (p.MEDICOS && p.MEDICOS.length) { %>
+                <% p.MEDICOS.forEach(m => { %>
+                  <div class="cell-registros">
+                    <% if ((m.REGISTROS && m.REGISTROS.length) || (m.JUSTIFICATIVAS && m.JUSTIFICATIVAS.length)) { %>
+                      <% (m.REGISTROS || []).forEach(r => { %>
+                        <div class="registro-linha">
+                          <span class="registro-tipo"><%= r.tipoLabel %></span>
+                          <span class="muted"><%= r.horaFmt || '—' %></span>
+                          <span class="tag tag-<%= r.situacaoClasse %>"><%= r.situacaoLabel %></span>
+                        </div>
+                      <% }) %>
+                      <% (m.JUSTIFICATIVAS || []).forEach(j => { %>
+                        <div class="registro-linha">
+                          <span class="registro-tipo">Justificativa</span>
+                          <span class="muted" title="<%= j.motivo || '' %>"><%= j.tipoLabel %></span>
+                          <span class="tag tag-<%= j.situacaoClasse %>"><%= j.situacaoLabel %></span>
+                        </div>
+                      <% }) %>
+                    <% } else { %>
+                      <span class="muted">Sem registro</span>
+                    <% } %>
+                  </div>
+                <% }) %>
+              <% } else { %>
+                <span class="muted">—</span>
+              <% } %>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+(function () {
+  function atualizarRotulo(msel) {
+    const toggleText = msel.querySelector(".msel-toggle-text");
+    const all = msel.querySelector("[data-msel-all]");
+    const items = Array.from(msel.querySelectorAll('input[type="checkbox"]:not([data-msel-all])'));
+    const checked = items.filter(i => i.checked);
+    const placeholderTodas = all ? (all.closest("label").querySelector("span")?.textContent || "Todas") : "Todas";
+
+    if (!checked.length) {
+      toggleText.textContent = placeholderTodas === "Todos" ? "Todos os status" : "Todas as filiais";
+      if (all) all.checked = true;
+      return;
+    }
+    if (all) all.checked = false;
+    if (checked.length === 1) {
+      const span = checked[0].closest("label")?.querySelector("span");
+      toggleText.textContent = span ? span.textContent : "1 selecionado";
+      return;
+    }
+    const unidade = items[0]?.name === "status" ? "status" : "filiais";
+    toggleText.textContent = checked.length + " " + unidade;
+  }
+
+  function fecharTodos(exceto) {
+    document.querySelectorAll("[data-msel].is-open").forEach(el => {
+      if (el === exceto) return;
+      el.classList.remove("is-open");
+      const panel = el.querySelector(".msel-panel");
+      const btn = el.querySelector(".msel-toggle");
+      if (panel) panel.hidden = true;
+      if (btn) btn.setAttribute("aria-expanded", "false");
+    });
+  }
+
+  document.querySelectorAll("[data-msel]").forEach(msel => {
+    const btn = msel.querySelector(".msel-toggle");
+    const panel = msel.querySelector(".msel-panel");
+    const all = msel.querySelector("[data-msel-all]");
+    const items = Array.from(msel.querySelectorAll('input[type="checkbox"]:not([data-msel-all])'));
+
+    btn.addEventListener("click", (e) => {
+      e.preventDefault();
+      const aberto = msel.classList.contains("is-open");
+      fecharTodos();
+      if (!aberto) {
+        msel.classList.add("is-open");
+        panel.hidden = false;
+        btn.setAttribute("aria-expanded", "true");
+      }
+    });
+
+    if (all) {
+      all.addEventListener("change", () => {
+        if (all.checked) items.forEach(i => { i.checked = false; });
+        atualizarRotulo(msel);
+      });
+    }
+
+    items.forEach(item => {
+      item.addEventListener("change", () => {
+        if (item.checked && all) all.checked = false;
+        if (!items.some(i => i.checked) && all) all.checked = true;
+        atualizarRotulo(msel);
+      });
+    });
+
+    atualizarRotulo(msel);
+  });
+
+  document.addEventListener("click", (e) => {
+    if (e.target.closest("[data-msel]")) return;
+    fecharTodos();
+  });
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") fecharTodos();
+  });
+})();
+</script>

@@ -11,6 +11,7 @@ const registroAcessoRoutes = require("./routes/registroAcesso.routes");
 const justificativaRoutes = require("./routes/justificativa.routes");
 const painelRoutes = require("./routes/painel.routes");
 const referenciaRoutes = require("./routes/referencia.routes");
+const relatorioRoutes = require("./routes/relatorio.routes");
 
 const app = express();
 
@@ -35,6 +36,8 @@ app.use((req, res, next) => {
   res.locals.sessionNome = req.session ? req.session.nome : null;
   if (req.path.startsWith("/justificativa/pendentes")) {
     res.locals.adminNav = "justificativas";
+  } else if (req.path.startsWith("/relatorio")) {
+    res.locals.adminNav = "relatorio";
   } else if (req.path.startsWith("/escala")) {
     res.locals.adminNav = "plantoes";
   }
@@ -47,6 +50,7 @@ app.use("/escala", escalaRoutes);
 app.use("/registro-acesso", registroAcessoRoutes);
 app.use("/justificativa", justificativaRoutes);
 app.use("/painel", painelRoutes);
+app.use("/relatorio", relatorioRoutes);
 app.use("/api", referenciaRoutes);
 
 app.use((err, req, res, next) => {
