@@ -1,0 +1,224 @@
+<%
+  const qsBase = [];
+  if (filtros.codFilial) qsBase.push("codFilial=" + encodeURIComponent(filtros.codFilial));
+  if (filtros.categoria) qsBase.push("categoria=" + encodeURIComponent(filtros.categoria));
+  if (filtros.statusCal) qsBase.push("statusCal=" + encodeURIComponent(filtros.statusCal));
+  const qsFiltros = qsBase.length ? "&" + qsBase.join("&") : "";
+  const hojeMes = calendario.hojeChave.slice(0, 7);
+%>
+<div class="page-calendario">
+  <div class="page-header">
+    <h1>Calendário</h1>
+    <div class="page-header-actions">
+      <a class="btn btn-primary" href="/escala/novo?origem=calendario">+ Novo plantão</a>
+      <form method="post" action="/logout"><button class="btn">Sair</button></form>
+    </div>
+  </div>
+
+  <div class="cal-layout">
+    <aside class="cal-sidebar" aria-label="Filtros e resumo">
+      <form method="get" action="/escala/calendario" class="cal-panel cal-filtros" id="formFiltrosCalendario">
+        <input type="hidden" name="mes" value="<%= filtros.mes %>">
+        <h2 class="cal-panel-title">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 6h16M7 12h10M10 18h4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          Filtros
+        </h2>
+
+        <label class="cal-filtro-label">
+          <span class="sr-only">Filial</span>
+          <select name="codFilial" onchange="this.form.submit()">
+            <option value="">Todas as Filiais</option>
+            <% filiais.forEach(f => { %>
+              <option value="<%= f.codFilial %>" <%= String(filtros.codFilial) === String(f.codFilial) ? "selected" : "" %>>
+                <%= f.nome %>
+              </option>
+            <% }) %>
+          </select>
+        </label>
+
+        <label class="cal-filtro-label">
+          <span class="sr-only">Categoria</span>
+          <select name="categoria" onchange="this.form.submit()" <%= categorias.length ? "" : "disabled" %>>
+            <% if (!categorias.length) { %>
+              <option value="">Sem categorias neste mês</option>
+            <% } else { %>
+              <option value="">Todas as categorias</option>
+              <% categorias.forEach(c => { %>
+                <option value="<%= c.codigo %>" <%= String(filtros.categoria) === String(c.codigo) ? "selected" : "" %>>
+                  <%= c.nome %>
+                </option>
+              <% }) %>
+            <% } %>
+          </select>
+        </label>
+
+        <label class="cal-filtro-label">
+          <span class="sr-only">Status</span>
+          <select name="statusCal" onchange="this.form.submit()">
+            <option value="">Todos os Status</option>
+            <% statusLegenda.forEach(s => { %>
+              <option value="<%= s.key %>" <%= filtros.statusCal === s.key ? "selected" : "" %>>
+                <%= s.label %>
+              </option>
+            <% }) %>
+          </select>
+        </label>
+      </form>
+
+      <section class="cal-panel cal-stats">
+        <h2 class="cal-panel-title">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 19V5M4 19h16M8 15v4M12 11v8M16 7v12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          Estatísticas
+        </h2>
+        <dl class="cal-stats-list">
+          <div><dt>Total de Eventos</dt><dd><%= stats.total %></dd></div>
+          <div><dt>Este Mês</dt><dd><%= stats.esteMes %></dd></div>
+          <div><dt>Pendentes</dt><dd><%= stats.pendentes %></dd></div>
+          <div><dt>Concluídos</dt><dd><%= stats.concluidos %></dd></div>
+        </dl>
+      </section>
+
+      <section class="cal-panel cal-legenda">
+        <h2 class="cal-panel-title">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 7h10v10H7zM4 4h3v3H4zM17 4h3v3h-3zM4 17h3v3H4zM17 17h3v3h-3z" stroke="currentColor" stroke-width="1.6"/></svg>
+          Legenda por Status
+        </h2>
+        <ul class="cal-legenda-list">
+          <% statusLegenda.forEach(s => { %>
+            <li>
+              <span class="cal-legenda-swatch <%= s.classe %>" aria-hidden="true"></span>
+              <%= s.label %>
+            </li>
+          <% }) %>
+        </ul>
+      </section>
+    </aside>
+
+    <section class="cal-main" aria-label="Grade do mês">
+      <div class="cal-toolbar">
+        <div class="cal-toolbar-nav">
+          <a class="btn btn-ghost cal-nav-btn" href="/escala/calendario?mes=<%= calendario.mesAnterior %><%= qsFiltros %>" title="Mês anterior" aria-label="Mês anterior">‹</a>
+          <a class="btn btn-ghost cal-nav-btn" href="/escala/calendario?mes=<%= calendario.mesProximo %><%= qsFiltros %>" title="Próximo mês" aria-label="Próximo mês">›</a>
+          <a class="btn btn-ghost cal-today-btn" href="/escala/calendario?mes=<%= hojeMes %><%= qsFiltros %>">today</a>
+        </div>
+        <h2 class="cal-month-title"><%= calendario.mesLabel %></h2>
+        <div class="cal-toolbar-view">
+          <span class="btn btn-ghost cal-view-btn is-active">month</span>
+        </div>
+      </div>
+
+      <div class="cal-grid" role="grid" aria-label="<%= calendario.mesLabel %>">
+        <% calendario.diasSemana.forEach(d => { %>
+          <div class="cal-dow" role="columnheader"><%= d %></div>
+        <% }) %>
+
+        <% calendario.dias.forEach(dia => { %>
+          <% if (dia.vazio) { %>
+            <div class="cal-day is-empty" role="gridcell"></div>
+          <% } else { %>
+            <div
+              class="cal-day <%= dia.hoje ? 'is-today' : '' %> <%= dia.temPlantao ? 'has-events' : '' %>"
+              role="gridcell"
+              data-date="<%= dia.chave %>"
+              tabindex="0"
+              title="Clique para cadastrar plantão em <%= dia.chave.split('-').reverse().join('/') %>"
+            >
+              <div class="cal-day-head">
+                <span class="cal-daynum"><%= dia.dia %></span>
+                <a
+                  class="cal-day-add"
+                  href="/escala/novo?data=<%= dia.chave %>&origem=calendario"
+                  title="Novo plantão neste dia"
+                  aria-label="Novo plantão em <%= dia.chave %>"
+                  onclick="event.stopPropagation()"
+                >+</a>
+              </div>
+              <div class="cal-day-events">
+                <% dia.eventos.forEach(ev => { %>
+                  <a
+                    class="cal-event <%= ev.STATUS_CAL.classe %>"
+                    href="<%= ev.PODE_EDITAR ? `/escala/${ev.IDPLANTAO}/editar` : `/escala` %>"
+                    title="<%= ev.TITULO_CAL %> · <%= ev.STATUS_CAL.label %>"
+                    onclick="event.stopPropagation()"
+                  >
+                    <span class="cal-event-dot" aria-hidden="true"></span>
+                    <span class="cal-event-text"><%= ev.TITULO_CAL %></span>
+                  </a>
+                <% }) %>
+                <% if (dia.ocultos > 0) { %>
+                  <button
+                    type="button"
+                    class="cal-more"
+                    data-date="<%= dia.chave %>"
+                    data-qtd="<%= dia.qtd %>"
+                    onclick="event.stopPropagation(); abrirDiaCompleto(this)"
+                  >+<%= dia.ocultos %> more</button>
+                <% } %>
+              </div>
+            </div>
+          <% } %>
+        <% }) %>
+      </div>
+    </section>
+  </div>
+</div>
+
+<dialog class="cal-day-dialog" id="dlgDiaCompleto">
+  <form method="dialog" class="cal-day-dialog-inner">
+    <header class="cal-day-dialog-head">
+      <h3 id="dlgDiaTitulo">Plantões do dia</h3>
+      <button type="submit" class="btn btn-ghost" value="cancel" aria-label="Fechar">✕</button>
+    </header>
+    <div class="cal-day-dialog-body" id="dlgDiaLista"></div>
+    <footer class="cal-day-dialog-foot">
+      <a class="btn btn-primary" id="dlgDiaNovo" href="#">+ Novo plantão neste dia</a>
+    </footer>
+  </form>
+</dialog>
+
+<script>
+(function () {
+  const porDia = <%- JSON.stringify(porDiaJson || {}) %>;
+  const dlg = document.getElementById("dlgDiaCompleto");
+  const lista = document.getElementById("dlgDiaLista");
+  const titulo = document.getElementById("dlgDiaTitulo");
+  const linkNovo = document.getElementById("dlgDiaNovo");
+
+  function irNovo(data) {
+    window.location.href = "/escala/novo?data=" + encodeURIComponent(data) + "&origem=calendario";
+  }
+
+  document.querySelectorAll(".cal-day:not(.is-empty)").forEach(cell => {
+    cell.addEventListener("click", (e) => {
+      if (e.target.closest("a, button")) return;
+      const data = cell.getAttribute("data-date");
+      if (data) irNovo(data);
+    });
+    cell.addEventListener("keydown", (e) => {
+      if (e.key !== "Enter" && e.key !== " ") return;
+      if (e.target !== cell) return;
+      e.preventDefault();
+      const data = cell.getAttribute("data-date");
+      if (data) irNovo(data);
+    });
+  });
+
+  window.abrirDiaCompleto = function (btn) {
+    const data = btn.getAttribute("data-date");
+    const eventos = porDia[data] || [];
+    const [y, m, d] = data.split("-");
+    titulo.textContent = "Plantões · " + d + "/" + m + "/" + y;
+    linkNovo.href = "/escala/novo?data=" + encodeURIComponent(data) + "&origem=calendario";
+    lista.innerHTML = eventos.map(ev => {
+      const href = ev.PODE_EDITAR ? ("/escala/" + ev.IDPLANTAO + "/editar") : "/escala";
+      const classe = (ev.STATUS_CAL && ev.STATUS_CAL.classe) || "cal-evt-pendente";
+      const label = (ev.STATUS_CAL && ev.STATUS_CAL.label) || "";
+      const text = ev.TITULO_CAL || ("Plantão #" + ev.IDPLANTAO);
+      return '<a class="cal-event cal-event-full ' + classe + '" href="' + href + '">' +
+        '<span class="cal-event-text">' + text + '</span>' +
+        '<span class="cal-event-status">' + label + '</span></a>';
+    }).join("") || '<p class="muted">Nenhum plantão.</p>';
+    if (typeof dlg.showModal === "function") dlg.showModal();
+  };
+})();
+</script>
