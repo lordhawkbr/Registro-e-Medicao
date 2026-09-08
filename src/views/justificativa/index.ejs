@@ -13,9 +13,9 @@
       <div>
         <strong>#<%= j.IDJUSTIFICATIVA %></strong>
         <p class="muted">Plantão #<%= j.IDPLANTAO %> · <%= new Date(j.DATA).toLocaleDateString('pt-BR') %></p>
-        <p><%= j.TIPOAUSENCIA %></p>
+        <span class="tag tag-<%= j.TIPO_CLASSE %>"><%= j.TIPO_LABEL || j.TIPOAUSENCIA %></span>
       </div>
-      <span class="badge badge-<%= j.STATUSAPROVACAO.toLowerCase() %>"><%= j.STATUSAPROVACAO %></span>
+      <span class="badge badge-<%= (j.STATUS_CLASSE || j.STATUSAPROVACAO || '').toLowerCase() %>"><%= j.STATUS_LABEL || j.STATUSAPROVACAO %></span>
     </div>
   </article>
 <% }) %>

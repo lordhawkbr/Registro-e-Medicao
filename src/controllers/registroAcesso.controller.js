@@ -1,7 +1,9 @@
 const registroModel = require("../models/registroAcesso.model");
 const escalaModel = require("../models/escala.model");
+const justificativaModel = require("../models/justificativa.model");
 const { formatarDataInput } = require("../utils/horario");
 const { crmPertenceAoPlantao } = require("../utils/crm");
+const { statusConclusaoMedico } = require("../utils/statusPlantao");
 
 async function index(req, res, next) {
   try {
@@ -14,7 +16,15 @@ async function index(req, res, next) {
       const registrosTodos = await registroModel.registrosDoPlantao(p.IDPLANTAO);
       const avaliacao = registroModel.avaliarJanela(p, registrosTodos, crm);
       const registros = registrosTodos.filter(r => String(r.CRM || "").toUpperCase() === String(crm).toUpperCase());
-      plantoesComStatus.push({ plantao: p, registros, avaliacao });
+      const justs = await justificativaModel.listarPorPlantao(p.IDPLANTAO);
+      const justsMedico = justs.filter(j => String(j.CRM || "").toUpperCase() === String(crm).toUpperCase());
+      const conclusao = statusConclusaoMedico(p, registros, justsMedico);
+      plantoesComStatus.push({
+        plantao: { ...p, CONCLUSAO: conclusao },
+        registros,
+        avaliacao,
+        justificativas: justsMedico
+      });
     }
 
     res.render("registroAcesso/index", {

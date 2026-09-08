@@ -1,6 +1,7 @@
 const registroModel = require("../models/registroAcesso.model");
 const justificativaModel = require("../models/justificativa.model");
 const { chaveData, formatarDataInput, DIAS_SEMANA } = require("../utils/horario");
+const { statusConclusaoMedico } = require("../utils/statusPlantao");
 
 function montarCalendario(plantoes, mesRef) {
   const base = mesRef ? new Date(`${mesRef}-01T12:00:00`) : new Date();
@@ -68,13 +69,26 @@ async function index(req, res, next) {
     const diaSelecionado = req.query.dia || formatarDataInput(new Date());
 
     const todosPlantoes = await registroModel.todosPlantoes(crm);
+    const justificativas = await justificativaModel.listarPorCrm(crm);
+    const justByPlantao = {};
+    justificativas.forEach(j => {
+      if (!justByPlantao[j.IDPLANTAO]) justByPlantao[j.IDPLANTAO] = [];
+      justByPlantao[j.IDPLANTAO].push(j);
+    });
 
     const plantoesComRegistros = [];
     for (const p of todosPlantoes) {
       const registrosTodos = await registroModel.registrosDoPlantao(p.IDPLANTAO);
       const avaliacao = registroModel.avaliarJanela(p, registrosTodos, crm);
       const registros = registrosTodos.filter(r => String(r.CRM || "").toUpperCase() === String(crm).toUpperCase());
-      plantoesComRegistros.push({ plantao: p, registros, avaliacao, registrosTodos });
+      const justs = justByPlantao[p.IDPLANTAO] || [];
+      const conclusao = statusConclusaoMedico(p, registros, justs);
+      plantoesComRegistros.push({
+        plantao: { ...p, CONCLUSAO: conclusao },
+        registros,
+        avaliacao,
+        justificativas: justs
+      });
     }
 
     const calendario = montarCalendario(plantoesComRegistros, mes);
@@ -83,10 +97,15 @@ async function index(req, res, next) {
     );
 
     const plantoesAbertos = plantoesComRegistros
-      .filter(({ plantao, registros }) => {
+      .filter(({ plantao, registros, avaliacao }) => {
+        if (plantao.STATUS === "CANCELADO") return false;
+        if (avaliacao && avaliacao.concluidoParaMedico) return false;
+        if (["REGISTRADO", "JUSTIFICADO", "JUSTIFICATIVA_PENDENTE"].includes(plantao.CONCLUSAO?.codigo)) {
+          return false;
+        }
         const temEntrada = registros.some(r => r.TIPO === "ENTRADA");
         const temSaida = registros.some(r => r.TIPO === "SAIDA");
-        return temEntrada && !temSaida && plantao.STATUS !== "CANCELADO";
+        return temEntrada && !temSaida;
       })
       .sort((a, b) => {
         const da = a.plantao.DATA_CHAVE || "";
@@ -95,7 +114,6 @@ async function index(req, res, next) {
         return String(a.plantao.HORAINICIO_INPUT || "").localeCompare(String(b.plantao.HORAINICIO_INPUT || ""));
       });
 
-    const justificativas = await justificativaModel.listarPorCrm(crm);
     const idsPlantoes = new Set(todosPlantoes.map(p => p.IDPLANTAO));
     const justificativasFiltradas = justificativas.filter(j => idsPlantoes.has(j.IDPLANTAO));
 
