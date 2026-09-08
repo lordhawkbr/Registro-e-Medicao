@@ -344,33 +344,31 @@ body.body-admin .container-lista .filtros-card {
   font-weight: 700;
 }
 
-.tag-tipo-registro {
-  color: #1e3a8a;
-  background: #e0e7ff;
-  border-color: #a5b4fc;
-}
-
-.tag-tipo-justificativa {
-  color: #7c2d12;
-  background: #ffedd5;
-  border-color: #fdba74;
-}
-
-.tag-tipo-sem_acao {
-  color: #4b5563;
-  background: #f3f4f6;
-  border-color: #d1d5db;
-}
-
-.tabela-relatorio .col-motivo {
-  max-width: 220px;
+.tabela-plantoes .col-registros {
+  width: 220px;
   white-space: normal;
-  font-size: 13px;
-  line-height: 1.35;
 }
 
-.tabela-relatorio td {
-  vertical-align: top;
+.cell-registros {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 2.4em;
+  justify-content: center;
+}
+
+.registro-linha {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  line-height: 1.3;
+}
+
+.registro-tipo {
+  font-weight: 700;
+  color: var(--ink);
 }
 
 .container-medico {
