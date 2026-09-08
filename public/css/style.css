@@ -130,6 +130,119 @@ h1, h2 {
   flex-wrap: wrap;
 }
 
+.filtros-card {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  align-items: end;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 14px;
+  box-shadow: var(--shadow);
+  margin-bottom: 18px;
+}
+
+.filtros-card label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.filtros-card input,
+.filtros-card select {
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  font: inherit;
+  font-size: 14px;
+  color: var(--ink);
+  background: #fff;
+  text-transform: none;
+  letter-spacing: normal;
+  font-weight: 500;
+}
+
+.filtros-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.page-header-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.col-horario { min-width: 220px; max-width: 320px; }
+.col-acoes { white-space: nowrap; }
+
+.badge-registrado { background: var(--ok); }
+.badge-justificado { background: #0f766e; }
+.badge-pendente_entrada { background: #2563eb; }
+.badge-pendente_saida { background: #d97706; }
+
+.form-page { max-width: 760px; }
+
+.form-escala {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px 12px;
+  max-width: 760px;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: var(--shadow);
+}
+
+.form-escala .span-2 { grid-column: span 2; }
+.form-escala .span-3 { grid-column: 1 / -1; }
+
+.form-escala input,
+.form-escala select {
+  padding: 8px 10px;
+  font-size: 14px;
+}
+
+.btn-sm {
+  padding: 6px 10px;
+  font-size: 12px;
+  border-radius: 10px;
+}
+
+.calendario-card.is-collapsed {
+  padding-bottom: 10px;
+}
+
+.calendario-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+
+.calendario-nav-meses {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+}
+
+.plantao-badges {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
 .tabela {
   width: 100%;
   border-collapse: collapse;
@@ -490,6 +603,10 @@ h1, h2 {
 
 @media (max-width: 720px) {
   .form-grid { grid-template-columns: 1fr; }
+  .form-escala { grid-template-columns: 1fr; }
+  .form-escala .span-2,
+  .form-escala .span-3 { grid-column: 1 / -1; }
+  .filtros-card { grid-template-columns: 1fr; }
   .tabela { display: block; overflow-x: auto; }
   .page-header { align-items: flex-start; }
 }

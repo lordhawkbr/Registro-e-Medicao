@@ -12,8 +12,8 @@
     <div>
       <strong>#<%= j.IDJUSTIFICATIVA %></strong> — CRM <%= j.CRM %> —
       Plantão #<%= j.IDPLANTAO %>
-      (<%= j.HORARIO_FORMATADO || (new Date(j.DATA).toLocaleDateString('pt-BR') + ', ' + j.HORAINICIO + '-' + j.HORAFIM) %>,
-      Filial <%= j.CODFILIAL %>/Setor <%= j.CODCCUSTO %>)
+      (<%= j.HORARIO_FORMATADO || new Date(j.DATA).toLocaleDateString('pt-BR') %>,
+      <%= j.FILIAL_NOME || j.CODFILIAL %> / <%= j.SETOR_NOME || j.CODCCUSTO %>)
     </div>
     <div><strong>Tipo:</strong> <%= j.TIPOAUSENCIA %></div>
     <div><strong>Motivo:</strong> <%= j.MOTIVO %></div>

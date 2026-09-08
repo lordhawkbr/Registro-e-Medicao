@@ -1,22 +1,47 @@
 <div class="page-header">
   <h1>Plantões</h1>
-  <div style="display:flex; gap:8px;">
+  <div class="page-header-actions">
     <a class="btn btn-primary" href="/escala/novo">+ Novo plantão</a>
     <a class="btn" href="/justificativa/pendentes">Justificativas</a>
     <form method="post" action="/logout"><button class="btn">Sair</button></form>
   </div>
 </div>
 
-<form method="get" class="filtros">
-  <input type="date" name="data" value="<%= filtros.data || '' %>">
-  <input type="number" name="codFilial" placeholder="Filial" value="<%= filtros.codFilial || '' %>">
-  <select name="status">
-    <option value="">Status (todos)</option>
-    <% ["ABERTO","EM_ANDAMENTO","CONCLUIDO","CANCELADO","PENDENTE_JUSTIFICATIVA"].forEach(s => { %>
-      <option value="<%= s %>" <%= filtros.status === s ? "selected" : "" %>><%= s %></option>
-    <% }) %>
-  </select>
-  <button type="submit">Filtrar</button>
+<form method="get" class="filtros filtros-card">
+  <label>
+    Data
+    <input type="date" name="data" value="<%= filtros.data || '' %>">
+  </label>
+  <label>
+    Filial
+    <select name="codFilial">
+      <option value="">Todas</option>
+      <% filiais.forEach(f => { %>
+        <option value="<%= f.codFilial %>" <%= String(filtros.codFilial || '') === String(f.codFilial) ? 'selected' : '' %>>
+          <%= f.nome %>
+        </option>
+      <% }) %>
+    </select>
+  </label>
+  <label>
+    Status
+    <select name="status">
+      <option value="">Todos</option>
+      <% [
+        ["ABERTO","Aberto"],
+        ["EM_ANDAMENTO","Em andamento"],
+        ["CONCLUIDO","Concluído"],
+        ["CANCELADO","Cancelado"],
+        ["PENDENTE_JUSTIFICATIVA","Justificativa pendente"]
+      ].forEach(([v,l]) => { %>
+        <option value="<%= v %>" <%= filtros.status === v ? "selected" : "" %>><%= l %></option>
+      <% }) %>
+    </select>
+  </label>
+  <div class="filtros-actions">
+    <button type="submit" class="btn btn-primary">Filtrar</button>
+    <a class="btn" href="/escala">Limpar</a>
+  </div>
 </form>
 
 <table class="tabela">
@@ -27,8 +52,8 @@
       <th>Horário</th>
       <th>Filial</th>
       <th>Setor</th>
-      <th>CRM Escalado</th>
-      <th>Status</th>
+      <th>Médico</th>
+      <th>Conclusão</th>
       <th></th>
     </tr>
   </thead>
@@ -40,16 +65,30 @@
       <tr>
         <td><%= p.IDPLANTAO %></td>
         <td><%= p.DATA_INPUT ? p.DATA_INPUT.split('-').reverse().join('/') : '' %></td>
-        <td><%= p.HORARIO_FORMATADO %></td>
-        <td><%= p.CODFILIAL %></td>
-        <td><%= p.CODCCUSTO %></td>
-        <td><%= p.CRM_ESCALADO %></td>
-        <td><span class="badge badge-<%= p.STATUS.toLowerCase() %>"><%= p.STATUS %></span></td>
+        <td class="col-horario"><%= p.HORARIO_FORMATADO %></td>
+        <td><%= p.FILIAL_NOME %></td>
+        <td><%= p.SETOR_NOME %></td>
         <td>
-          <a href="/escala/<%= p.IDPLANTAO %>/editar">Editar</a>
-          <form method="post" action="/escala/<%= p.IDPLANTAO %>?_method=DELETE" style="display:inline" onsubmit="return confirm('Cancelar este plantão?')">
-            <button type="submit" class="link-danger">Cancelar</button>
-          </form>
+          <% if (p.MEDICO_NOME) { %>
+            <div><%= p.MEDICO_NOME %></div>
+            <div class="muted"><%= p.CRM_ESCALADO %></div>
+          <% } else { %>
+            <%= p.CRM_ESCALADO %>
+          <% } %>
+        </td>
+        <td>
+          <span class="badge badge-<%= p.CONCLUSAO.classe %>"><%= p.CONCLUSAO.label %></span>
+          <div class="muted" style="margin-top:4px;"><%= p.STATUS %></div>
+        </td>
+        <td class="col-acoes">
+          <% if (p.PODE_EDITAR) { %>
+            <a href="/escala/<%= p.IDPLANTAO %>/editar">Editar</a>
+            <form method="post" action="/escala/<%= p.IDPLANTAO %>?_method=DELETE" style="display:inline" onsubmit="return confirm('Cancelar este plantão?')">
+              <button type="submit" class="link-danger">Cancelar</button>
+            </form>
+          <% } else { %>
+            <span class="muted">—</span>
+          <% } %>
         </td>
       </tr>
     <% }) %>

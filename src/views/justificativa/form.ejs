@@ -10,7 +10,7 @@
   <div class="plantao-tile">
     <strong>Plantão #<%= plantao.IDPLANTAO %></strong>
     <p class="plantao-horario"><%= plantao.HORARIO_FORMATADO || (plantao.HORAINICIO + ' às ' + plantao.HORAFIM) %></p>
-    <p class="muted">Filial <%= plantao.CODFILIAL %> · Setor <%= plantao.CODCCUSTO %></p>
+    <p class="muted"><%= plantao.FILIAL_NOME || plantao.CODFILIAL %> · <%= plantao.SETOR_NOME || plantao.CODCCUSTO %></p>
   </div>
 
   <form method="post" action="/justificativa" class="form-grid form-mobile">

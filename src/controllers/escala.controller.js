@@ -8,8 +8,11 @@ async function index(req, res, next) {
       codFilial: req.query.codFilial || null,
       status: req.query.status || null
     };
-    const plantoes = await escalaModel.listar(filtros);
-    res.render("escala/index", { plantoes, filtros });
+    const [plantoes, filiais] = await Promise.all([
+      escalaModel.listar(filtros),
+      referenciaModel.listarFiliais()
+    ]);
+    res.render("escala/index", { plantoes, filtros, filiais });
   } catch (err) {
     next(err);
   }
@@ -39,6 +42,9 @@ async function editar(req, res, next) {
   try {
     const plantao = await escalaModel.buscarPorId(req.params.id);
     if (!plantao) return res.status(404).send("Plantão não encontrado");
+    if (!plantao.PODE_EDITAR) {
+      return res.status(403).send("Este plantão já teve ação do médico e não pode mais ser editado.");
+    }
     const filiais = await referenciaModel.listarFiliais();
     res.render("escala/form", { plantao, erro: null, filiais });
   } catch (err) {

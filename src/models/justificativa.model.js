@@ -1,11 +1,14 @@
 const { sql, getPool } = require("../config/db");
 const { formatarPeriodoPlantao } = require("../utils/horario");
+const { limparNomeFilial } = require("../utils/statusPlantao");
 
 function normalizarJustificativa(row) {
   if (!row) return row;
   return {
     ...row,
-    HORARIO_FORMATADO: formatarPeriodoPlantao(row.DATA, row.HORAINICIO, row.HORAFIM)
+    HORARIO_FORMATADO: formatarPeriodoPlantao(row.DATA, row.HORAINICIO, row.HORAFIM),
+    FILIAL_NOME: limparNomeFilial(row.FILIAL_NOME_RAW) || String(row.CODFILIAL),
+    SETOR_NOME: row.SETOR_NOME || row.CODCCUSTO
   };
 }
 
@@ -37,9 +40,12 @@ async function listarPorCrm(crm) {
   const result = await pool.request()
     .input("crm", sql.VarChar, crm)
     .query(`
-      SELECT j.*, e.DATA, e.HORAINICIO, e.HORAFIM, e.CODFILIAL, e.CODCCUSTO
+      SELECT j.*, e.DATA, e.HORAINICIO, e.HORAFIM, e.CODFILIAL, e.CODCCUSTO,
+             f.NOMEFANTASIA AS FILIAL_NOME_RAW, c.NOME AS SETOR_NOME
       FROM JUSTIFICATIVAAUSENCIA j
       INNER JOIN ESCALAMEDICA e ON e.IDPLANTAO = j.IDPLANTAO
+      LEFT JOIN GFILIAL f ON f.CODFILIAL = e.CODFILIAL
+      LEFT JOIN GCCUSTO c ON c.CODCCUSTO = e.CODCCUSTO
       WHERE j.CRM = @crm
       ORDER BY j.RECCREATEDON DESC
     `);
@@ -49,9 +55,12 @@ async function listarPorCrm(crm) {
 async function listarPendentes() {
   const pool = await getPool();
   const result = await pool.request().query(`
-    SELECT j.*, e.DATA, e.HORAINICIO, e.HORAFIM, e.CODFILIAL, e.CODCCUSTO
+    SELECT j.*, e.DATA, e.HORAINICIO, e.HORAFIM, e.CODFILIAL, e.CODCCUSTO,
+           f.NOMEFANTASIA AS FILIAL_NOME_RAW, c.NOME AS SETOR_NOME
     FROM JUSTIFICATIVAAUSENCIA j
     INNER JOIN ESCALAMEDICA e ON e.IDPLANTAO = j.IDPLANTAO
+    LEFT JOIN GFILIAL f ON f.CODFILIAL = e.CODFILIAL
+    LEFT JOIN GCCUSTO c ON c.CODCCUSTO = e.CODCCUSTO
     WHERE j.STATUSAPROVACAO = 'PENDENTE'
     ORDER BY j.RECCREATEDON ASC
   `);

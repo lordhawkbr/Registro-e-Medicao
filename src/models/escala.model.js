@@ -1,14 +1,51 @@
 const { sql, getPool } = require("../config/db");
 const { extrairHoraMinuto, formatarPeriodoPlantao, formatarHoraInput, formatarDataInput } = require("../utils/horario");
+const { statusConclusao, podeEditarOuCancelar, limparNomeFilial } = require("../utils/statusPlantao");
+
+const SELECT_PLANTAO_ENRIQUECIDO = `
+  SELECT
+    e.*,
+    f.NOMEFANTASIA AS FILIAL_NOME_RAW,
+    c.NOME AS SETOR_NOME,
+    t.DESCRICAO AS TIPO_DESCRICAO,
+    t.TURNO AS TIPO_TURNO,
+    t.TIPO AS TIPO_TURNO_TIPO,
+    m.NOMECOMPLETO AS MEDICO_NOME,
+    (
+      SELECT COUNT(*) FROM REGISTROACESSO r WHERE r.IDPLANTAO = e.IDPLANTAO
+    ) AS QTD_REGISTROS,
+    (
+      SELECT COUNT(*) FROM JUSTIFICATIVAAUSENCIA j WHERE j.IDPLANTAO = e.IDPLANTAO
+    ) AS QTD_JUSTIFICATIVAS,
+    (
+      SELECT COUNT(*) FROM JUSTIFICATIVAAUSENCIA j
+      WHERE j.IDPLANTAO = e.IDPLANTAO AND j.STATUSAPROVACAO = 'APROVADO'
+    ) AS QTD_JUST_APROVADAS
+  FROM ESCALAMEDICA e
+  LEFT JOIN GFILIAL f ON f.CODFILIAL = e.CODFILIAL
+  LEFT JOIN GCCUSTO c ON c.CODCCUSTO = e.CODCCUSTO
+  LEFT JOIN ZMDTIPOPLANTAOMEDICO2 t ON t.ID = e.CODTIPOPLANTAO
+  LEFT JOIN ZMDMEDICOSPJ m
+    ON LTRIM(RTRIM(CAST(m.CRM AS VARCHAR(20)))) + LTRIM(RTRIM(CAST(m.UFCRM AS VARCHAR(5)))) = e.CRM_ESCALADO
+`;
 
 function normalizarPlantao(row) {
   if (!row) return row;
+  const conclusao = statusConclusao(row);
   return {
     ...row,
     DATA_INPUT: formatarDataInput(row.DATA),
     HORAINICIO_INPUT: formatarHoraInput(row.HORAINICIO),
     HORAFIM_INPUT: formatarHoraInput(row.HORAFIM),
-    HORARIO_FORMATADO: formatarPeriodoPlantao(row.DATA, row.HORAINICIO, row.HORAFIM)
+    HORARIO_FORMATADO: formatarPeriodoPlantao(row.DATA, row.HORAINICIO, row.HORAFIM),
+    FILIAL_NOME: limparNomeFilial(row.FILIAL_NOME_RAW) || String(row.CODFILIAL),
+    SETOR_NOME: row.SETOR_NOME || row.CODCCUSTO,
+    TIPO_NOME: row.TIPO_DESCRICAO
+      ? `${row.TIPO_DESCRICAO}${row.TIPO_TURNO ? ` (${row.TIPO_TURNO}${row.TIPO_TURNO_TIPO ? "/" + row.TIPO_TURNO_TIPO : ""})` : ""}`
+      : (row.CODTIPOPLANTAO != null ? `Tipo #${row.CODTIPOPLANTAO}` : ""),
+    MEDICO_NOME: row.MEDICO_NOME ? String(row.MEDICO_NOME).trim() : null,
+    CONCLUSAO: conclusao,
+    PODE_EDITAR: podeEditarOuCancelar(row)
   };
 }
 
@@ -19,21 +56,21 @@ async function listar(filtros = {}) {
 
   if (filtros.data) {
     request.input("data", sql.Date, filtros.data);
-    where += " AND DATA = @data";
+    where += " AND e.DATA = @data";
   }
   if (filtros.codFilial) {
     request.input("codFilial", sql.Int, filtros.codFilial);
-    where += " AND CODFILIAL = @codFilial";
+    where += " AND e.CODFILIAL = @codFilial";
   }
   if (filtros.status) {
     request.input("status", sql.VarChar, filtros.status);
-    where += " AND STATUS = @status";
+    where += " AND e.STATUS = @status";
   }
 
   const result = await request.query(`
-    SELECT * FROM ESCALAMEDICA
+    ${SELECT_PLANTAO_ENRIQUECIDO}
     ${where}
-    ORDER BY DATA DESC, HORAINICIO ASC
+    ORDER BY e.DATA DESC, e.HORAINICIO ASC
   `);
   return result.recordset.map(normalizarPlantao);
 }
@@ -42,7 +79,10 @@ async function buscarPorId(idPlantao) {
   const pool = await getPool();
   const result = await pool.request()
     .input("id", sql.Int, idPlantao)
-    .query("SELECT * FROM ESCALAMEDICA WHERE IDPLANTAO = @id");
+    .query(`
+      ${SELECT_PLANTAO_ENRIQUECIDO}
+      WHERE e.IDPLANTAO = @id
+    `);
   return normalizarPlantao(result.recordset[0]);
 }
 
@@ -75,6 +115,12 @@ async function criar(dados, usuario) {
 }
 
 async function atualizar(idPlantao, dados) {
+  const atual = await buscarPorId(idPlantao);
+  if (!atual) throw new Error("Plantão não encontrado");
+  if (!atual.PODE_EDITAR) {
+    throw new Error("Este plantão já teve ação do médico e não pode mais ser editado.");
+  }
+
   const pool = await getPool();
   const dataExpiracao = calcularDataExpiracao(dados.data, dados.horaFim);
 
@@ -113,13 +159,18 @@ function montarCrmEscalado(dados) {
 }
 
 async function cancelar(idPlantao) {
+  const atual = await buscarPorId(idPlantao);
+  if (!atual) throw new Error("Plantão não encontrado");
+  if (!atual.PODE_EDITAR) {
+    throw new Error("Este plantão já teve ação do médico e não pode mais ser cancelado.");
+  }
+
   const pool = await getPool();
   await pool.request()
     .input("id", sql.Int, idPlantao)
     .query("UPDATE ESCALAMEDICA SET STATUS = 'CANCELADO' WHERE IDPLANTAO = @id");
 }
 
-// HORAFIM + 15min de tolerancia + 30 dias = prazo para expirar sem registro/justificativa
 function calcularDataExpiracao(data, horaFim) {
   const { h, m } = extrairHoraMinuto(horaFim);
   const base = new Date(data);
