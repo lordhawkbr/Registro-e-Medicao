@@ -1,100 +1,98 @@
-<h1>
-  <%= plantao && plantao.IDPLANTAO ? "Editar plantão" : "Novo plantão" %>
-</h1>
+<div class="form-page">
+  <h1>
+    <%= plantao && plantao.IDPLANTAO ? "Editar plantão" : "Novo plantão" %>
+  </h1>
 
-<% if (erro) { %>
-  <div class="alert alert-danger">
-    <%= erro %>
-  </div>
-<% } %>
+  <% if (erro) { %>
+    <div class="alert alert-danger"><%= erro %></div>
+  <% } %>
 
-<%
-  const dataVal = plantao ? (plantao.DATA_INPUT || plantao.data || "") : "";
-  const horaIniVal = plantao ? (plantao.HORAINICIO_INPUT || plantao.horaInicio || "") : "";
-  const horaFimVal = plantao ? (plantao.HORAFIM_INPUT || plantao.horaFim || "") : "";
-  const crmAtual = plantao ? (plantao.CRM_ESCALADO || plantao.crmEscalado || "") : "";
-  const ufAtual = plantao ? (plantao.ufCrm || "") : "";
-  const especialidadeAtual = plantao ? (plantao.IDESPECIALIDADE || plantao.idEspecialidade || plantao.especialidade || "") : "";
-%>
+  <%
+    const dataVal = plantao ? (plantao.DATA_INPUT || plantao.data || "") : "";
+    const horaIniVal = plantao ? (plantao.HORAINICIO_INPUT || plantao.horaInicio || "") : "";
+    const horaFimVal = plantao ? (plantao.HORAFIM_INPUT || plantao.horaFim || "") : "";
+    const crmAtual = plantao ? (plantao.CRM_ESCALADO || plantao.crmEscalado || "") : "";
+    const ufAtual = plantao ? (plantao.ufCrm || "") : "";
+    const especialidadeAtual = plantao ? (plantao.IDESPECIALIDADE || plantao.idEspecialidade || plantao.especialidade || "") : "";
+  %>
 
-<form id="formEscala" method="post"
-  action="<%= plantao && plantao.IDPLANTAO ? `/escala/${plantao.IDPLANTAO}?_method=PUT` : '/escala' %>"
-  class="form-grid"
->
-  <input type="hidden" name="idEspecialidade" id="inpIdEspecialidade" required value="<%= especialidadeAtual %>">
-  <input type="hidden" name="especialidade" id="inpEspecialidade" value="<%= especialidadeAtual %>">
-  <input type="hidden" name="crmEscalado" id="inpCrmEscalado" required value="<%= crmAtual %>">
-  <input type="hidden" name="ufCrm" id="inpUfCrm" value="<%= ufAtual %>">
+  <form id="formEscala" method="post"
+    action="<%= plantao && plantao.IDPLANTAO ? `/escala/${plantao.IDPLANTAO}?_method=PUT` : '/escala' %>"
+    class="form-grid form-escala"
+  >
+    <input type="hidden" name="idEspecialidade" id="inpIdEspecialidade" required value="<%= especialidadeAtual %>">
+    <input type="hidden" name="especialidade" id="inpEspecialidade" value="<%= especialidadeAtual %>">
+    <input type="hidden" name="crmEscalado" id="inpCrmEscalado" required value="<%= crmAtual %>">
+    <input type="hidden" name="ufCrm" id="inpUfCrm" value="<%= ufAtual %>">
 
-  <label>
-    Filial
-    <select name="codFilial" id="selFilial" required>
-      <option value="">Selecione a filial</option>
-      <% filiais.forEach(f=> { %>
-        <option value="<%= f.codFilial %>" <%= plantao && String(plantao.CODFILIAL || plantao.codFilial) === String(f.codFilial) ? "selected" : "" %>>
-          <%= f.nome %>
-        </option>
-      <% }) %>
-    </select>
-  </label>
+    <label class="span-2">
+      Filial
+      <select name="codFilial" id="selFilial" required>
+        <option value="">Selecione</option>
+        <% filiais.forEach(f=> { %>
+          <option value="<%= f.codFilial %>" <%= plantao && String(plantao.CODFILIAL || plantao.codFilial) === String(f.codFilial) ? "selected" : "" %>>
+            <%= f.nome %>
+          </option>
+        <% }) %>
+      </select>
+    </label>
 
-  <label>
-    Empresa
-    <input type="text" name="empresa" id="inpEmpresa" required readonly
-      value="<%= plantao ? (plantao.EMPRESA || plantao.empresa || '') : '' %>">
-  </label>
+    <label>
+      Empresa
+      <input type="text" name="empresa" id="inpEmpresa" required readonly
+        value="<%= plantao ? (plantao.EMPRESA || plantao.empresa || '') : '' %>">
+    </label>
 
-  <label>
-    Centro de custo (setor)
-    <select name="codCCusto" id="selSetor" required>
-      <option value="">Selecione a filial primeiro</option>
-      <% if (plantao && (plantao.CODCCUSTO || plantao.codCCusto)) { %>
-        <option value="<%= plantao.CODCCUSTO || plantao.codCCusto %>" selected>
-          <%= plantao.CODCCUSTO || plantao.codCCusto %>
-        </option>
-      <% } %>
-    </select>
-  </label>
+    <label class="span-2">
+      Centro de custo
+      <select name="codCCusto" id="selSetor" required>
+        <option value="">Selecione a filial</option>
+        <% if (plantao && (plantao.CODCCUSTO || plantao.codCCusto)) { %>
+          <option value="<%= plantao.CODCCUSTO || plantao.codCCusto %>" selected>
+            <%= plantao.SETOR_NOME || plantao.CODCCUSTO || plantao.codCCusto %>
+          </option>
+        <% } %>
+      </select>
+    </label>
 
-  <label>
-    Data
-    <input type="date" name="data" required value="<%= dataVal %>">
-  </label>
+    <label class="span-2">
+      Tipo de plantão
+      <select name="codTipoPlantao" id="selTipoPlantao" required>
+        <option value="">Selecione setor</option>
+        <% if (plantao && (plantao.CODTIPOPLANTAO || plantao.codTipoPlantao)) { %>
+          <option value="<%= plantao.CODTIPOPLANTAO || plantao.codTipoPlantao %>" selected>
+            <%= plantao.TIPO_NOME || ('Tipo #' + (plantao.CODTIPOPLANTAO || plantao.codTipoPlantao)) %>
+          </option>
+        <% } %>
+      </select>
+    </label>
 
-  <label>
-    Hora início
-    <input type="time" name="horaInicio" required value="<%= horaIniVal %>">
-  </label>
+    <label>
+      Data
+      <input type="date" name="data" required value="<%= dataVal %>">
+    </label>
+    <label>
+      Início
+      <input type="time" name="horaInicio" required value="<%= horaIniVal %>">
+    </label>
+    <label>
+      Fim
+      <input type="time" name="horaFim" required value="<%= horaFimVal %>">
+    </label>
 
-  <label>
-    Hora fim
-    <input type="time" name="horaFim" required value="<%= horaFimVal %>">
-  </label>
+    <label class="span-3">
+      Médico escalado
+      <select id="selMedico" required>
+        <option value="">Selecione tipo de plantão</option>
+      </select>
+    </label>
 
-  <label>
-    Tipo de plantão
-    <select name="codTipoPlantao" id="selTipoPlantao" required>
-      <option value="">Selecione filial e setor primeiro</option>
-      <% if (plantao && (plantao.CODTIPOPLANTAO || plantao.codTipoPlantao)) { %>
-        <option value="<%= plantao.CODTIPOPLANTAO || plantao.codTipoPlantao %>" selected>
-          Tipo #<%= plantao.CODTIPOPLANTAO || plantao.codTipoPlantao %> (atual)
-        </option>
-      <% } %>
-    </select>
-  </label>
-
-  <label>
-    Médico escalado
-    <select id="selMedico" required>
-      <option value="">Selecione filial e tipo de plantão primeiro</option>
-    </select>
-  </label>
-
-  <div class="form-actions">
-    <button type="submit" class="btn btn-primary">Salvar</button>
-    <a href="/escala" class="btn">Cancelar</a>
-  </div>
-</form>
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary">Salvar</button>
+      <a href="/escala" class="btn">Cancelar</a>
+    </div>
+  </form>
+</div>
 
 <script>
   const selFilial = document.getElementById("selFilial");
@@ -106,7 +104,6 @@
   const inpEspecialidade = document.getElementById("inpEspecialidade");
   const inpCrmEscalado = document.getElementById("inpCrmEscalado");
   const inpUfCrm = document.getElementById("inpUfCrm");
-
   const CRM_ATUAL = "<%= crmAtual %>";
 
   async function carregarEmpresa(codFilial) {
@@ -119,7 +116,7 @@
   async function carregarSetores(codFilial, setorSelecionadoAtual) {
     selSetor.innerHTML = '<option value="">Carregando...</option>';
     if (!codFilial) {
-      selSetor.innerHTML = '<option value="">Selecione a filial primeiro</option>';
+      selSetor.innerHTML = '<option value="">Selecione a filial</option>';
       return;
     }
     const res = await fetch(`/api/setores/${codFilial}`);
@@ -131,13 +128,12 @@
   async function carregarTiposPlantao(codFilial, codCCusto, tipoSelecionadoAtual) {
     selTipoPlantao.innerHTML = '<option value="">Carregando...</option>';
     if (!codFilial || !codCCusto) {
-      selTipoPlantao.innerHTML = '<option value="">Selecione filial e setor primeiro</option>';
+      selTipoPlantao.innerHTML = '<option value="">Selecione setor</option>';
       return;
     }
     const res = await fetch(`/api/tipos-plantao?codFilial=${codFilial}&codCCusto=${encodeURIComponent(codCCusto)}`);
     const tipos = await res.json();
-    console.log(tipos)
-    selTipoPlantao.innerHTML = '<option value="">Selecione o tipo de plantão</option>' +
+    selTipoPlantao.innerHTML = '<option value="">Selecione o tipo</option>' +
       tipos.map(t => {
         const esp = t.ESPECIALIDADE != null ? String(t.ESPECIALIDADE) : "";
         const selected = String(t.IDPRD) === String(tipoSelecionadoAtual) ? "selected" : "";
@@ -146,9 +142,7 @@
 
     if (tipoSelecionadoAtual) {
       const opt = selTipoPlantao.selectedOptions[0];
-      if (opt && opt.dataset.especialidade) {
-        aplicarEspecialidade(opt.dataset.especialidade);
-      }
+      if (opt && opt.dataset.especialidade) aplicarEspecialidade(opt.dataset.especialidade);
     }
   }
 
@@ -161,7 +155,7 @@
   async function carregarMedicos(codFilial, especialidade, crmSelecionado) {
     selMedico.innerHTML = '<option value="">Carregando...</option>';
     if (!codFilial || !especialidade) {
-      selMedico.innerHTML = '<option value="">Selecione filial e tipo de plantão primeiro</option>';
+      selMedico.innerHTML = '<option value="">Selecione tipo de plantão</option>';
       inpCrmEscalado.value = "";
       inpUfCrm.value = "";
       return;
@@ -169,7 +163,7 @@
     const res = await fetch(`/api/medicos?codFilial=${codFilial}&especialidade=${encodeURIComponent(especialidade)}`);
     const medicos = await res.json();
     if (!medicos.length) {
-      selMedico.innerHTML = '<option value="">Nenhum médico ativo para esta filial/especialidade</option>';
+      selMedico.innerHTML = '<option value="">Nenhum médico ativo</option>';
       inpCrmEscalado.value = "";
       inpUfCrm.value = "";
       return;
@@ -182,7 +176,6 @@
         const selected = alvo && (crmCompleto === alvo || String(m.crm).toUpperCase() === alvo) ? "selected" : "";
         return `<option value="${m.crm}" data-uf="${m.ufCrm}" data-crm-completo="${m.crm}${m.ufCrm}" ${selected}>${m.nomeCompleto}</option>`;
       }).join("");
-
     sincronizarCrmOculto();
   }
 
@@ -200,8 +193,8 @@
   selFilial.addEventListener("change", () => {
     carregarEmpresa(selFilial.value);
     carregarSetores(selFilial.value, null);
-    selTipoPlantao.innerHTML = '<option value="">Selecione filial e setor primeiro</option>';
-    selMedico.innerHTML = '<option value="">Selecione filial e tipo de plantão primeiro</option>';
+    selTipoPlantao.innerHTML = '<option value="">Selecione setor</option>';
+    selMedico.innerHTML = '<option value="">Selecione tipo de plantão</option>';
     inpCrmEscalado.value = "";
     inpUfCrm.value = "";
     aplicarEspecialidade("");
@@ -209,7 +202,7 @@
 
   selSetor.addEventListener("change", () => {
     carregarTiposPlantao(selFilial.value, selSetor.value, null);
-    selMedico.innerHTML = '<option value="">Selecione o tipo de plantão</option>';
+    selMedico.innerHTML = '<option value="">Selecione tipo de plantão</option>';
     inpCrmEscalado.value = "";
     inpUfCrm.value = "";
     aplicarEspecialidade("");
@@ -224,7 +217,6 @@
 
   selMedico.addEventListener("change", sincronizarCrmOculto);
 
-  // Edicao: pre-carrega setor, tipo e medico ja salvos
   const filialInicial = selFilial.value;
   const setorInicial = "<%= plantao ? (plantao.CODCCUSTO || plantao.codCCusto || '') : '' %>";
   const tipoInicial = "<%= plantao ? (plantao.CODTIPOPLANTAO || plantao.codTipoPlantao || '') : '' %>";

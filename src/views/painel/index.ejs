@@ -14,14 +14,17 @@
 
   <% if (tab === "plantoes") { %>
 
-    <section class="calendario-card">
+    <section class="calendario-card" id="calendarioCard">
       <div class="calendario-nav">
-        <a class="btn btn-ghost" href="/painel?tab=plantoes&mes=<%= calendario.mesAnterior %>&dia=<%= diaSelecionado %>">‹</a>
-        <strong class="calendario-mes"><%= calendario.mesLabel %></strong>
-        <a class="btn btn-ghost" href="/painel?tab=plantoes&mes=<%= calendario.mesProximo %>&dia=<%= diaSelecionado %>">›</a>
+        <button type="button" class="btn btn-ghost btn-sm" id="btnToggleCalendario" aria-expanded="true">Ocultar calendário</button>
+        <div class="calendario-nav-meses" id="calendarioNavMeses">
+          <a class="btn btn-ghost" href="/painel?tab=plantoes&mes=<%= calendario.mesAnterior %>&dia=<%= diaSelecionado %>">‹</a>
+          <strong class="calendario-mes"><%= calendario.mesLabel %></strong>
+          <a class="btn btn-ghost" href="/painel?tab=plantoes&mes=<%= calendario.mesProximo %>&dia=<%= diaSelecionado %>">›</a>
+        </div>
       </div>
 
-      <div class="calendario-grid">
+      <div class="calendario-grid" id="calendarioGrid">
         <% calendario.diasSemana.forEach(d => { %>
           <div class="calendario-dow"><%= d %></div>
         <% }) %>
@@ -56,9 +59,12 @@
             <div>
               <strong>Plantão #<%= plantao.IDPLANTAO %></strong>
               <p class="plantao-horario"><%= plantao.HORARIO_FORMATADO %></p>
-              <p class="muted">Filial <%= plantao.CODFILIAL %> · Setor <%= plantao.CODCCUSTO %></p>
+              <p class="muted"><%= plantao.FILIAL_NOME %> · <%= plantao.SETOR_NOME %></p>
+              <% if (plantao.TIPO_NOME) { %><p class="muted"><%= plantao.TIPO_NOME %></p><% } %>
             </div>
-            <span class="badge badge-<%= plantao.STATUS.toLowerCase() %>"><%= plantao.STATUS %></span>
+            <div class="plantao-badges">
+              <span class="badge badge-<%= plantao.CONCLUSAO.classe %>"><%= plantao.CONCLUSAO.label %></span>
+            </div>
           </div>
 
           <% if (registros.length) { %>
@@ -94,6 +100,31 @@
         </article>
       <% }) %>
     </section>
+
+    <script>
+      (function () {
+        const card = document.getElementById("calendarioCard");
+        const grid = document.getElementById("calendarioGrid");
+        const navMeses = document.getElementById("calendarioNavMeses");
+        const btn = document.getElementById("btnToggleCalendario");
+        if (!card || !btn) return;
+
+        const KEY = "escala.calendarioVisivel";
+        function aplicar(visivel) {
+          grid.style.display = visivel ? "grid" : "none";
+          navMeses.style.display = visivel ? "flex" : "none";
+          card.classList.toggle("is-collapsed", !visivel);
+          btn.setAttribute("aria-expanded", visivel ? "true" : "false");
+          btn.textContent = visivel ? "Ocultar calendário" : "Mostrar calendário";
+          try { localStorage.setItem(KEY, visivel ? "1" : "0"); } catch (e) {}
+        }
+
+        let visivel = true;
+        try { visivel = localStorage.getItem(KEY) !== "0"; } catch (e) {}
+        aplicar(visivel);
+        btn.addEventListener("click", () => aplicar(!(btn.getAttribute("aria-expanded") === "true")));
+      })();
+    </script>
 
   <% } else { %>
 

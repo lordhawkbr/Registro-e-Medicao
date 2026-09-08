@@ -7,8 +7,31 @@ const {
   formatarHoraInput,
   formatarDataInput
 } = require("../utils/horario");
+const { statusConclusao, limparNomeFilial } = require("../utils/statusPlantao");
 
 const TOLERANCIA_MIN = 15;
+
+const SELECT_PLANTAO_ENRIQUECIDO = `
+  SELECT
+    e.*,
+    f.NOMEFANTASIA AS FILIAL_NOME_RAW,
+    c.NOME AS SETOR_NOME,
+    t.DESCRICAO AS TIPO_DESCRICAO,
+    (
+      SELECT COUNT(*) FROM REGISTROACESSO r WHERE r.IDPLANTAO = e.IDPLANTAO
+    ) AS QTD_REGISTROS,
+    (
+      SELECT COUNT(*) FROM JUSTIFICATIVAAUSENCIA j WHERE j.IDPLANTAO = e.IDPLANTAO
+    ) AS QTD_JUSTIFICATIVAS,
+    (
+      SELECT COUNT(*) FROM JUSTIFICATIVAAUSENCIA j
+      WHERE j.IDPLANTAO = e.IDPLANTAO AND j.STATUSAPROVACAO = 'APROVADO'
+    ) AS QTD_JUST_APROVADAS
+  FROM ESCALAMEDICA e
+  LEFT JOIN GFILIAL f ON f.CODFILIAL = e.CODFILIAL
+  LEFT JOIN GCCUSTO c ON c.CODCCUSTO = e.CODCCUSTO
+  LEFT JOIN ZMDTIPOPLANTAOMEDICO2 t ON t.ID = e.CODTIPOPLANTAO
+`;
 
 function normalizarPlantao(row) {
   if (!row) return row;
@@ -18,40 +41,42 @@ function normalizarPlantao(row) {
     HORAINICIO_INPUT: formatarHoraInput(row.HORAINICIO),
     HORAFIM_INPUT: formatarHoraInput(row.HORAFIM),
     HORARIO_FORMATADO: formatarPeriodoPlantao(row.DATA, row.HORAINICIO, row.HORAFIM),
-    DATA_CHAVE: chaveData(row.DATA)
+    DATA_CHAVE: chaveData(row.DATA),
+    FILIAL_NOME: limparNomeFilial(row.FILIAL_NOME_RAW) || String(row.CODFILIAL),
+    SETOR_NOME: row.SETOR_NOME || row.CODCCUSTO,
+    TIPO_NOME: row.TIPO_DESCRICAO || (row.CODTIPOPLANTAO != null ? `Tipo #${row.CODTIPOPLANTAO}` : ""),
+    CONCLUSAO: statusConclusao(row)
   };
 }
 
-// Plantões do médico hoje, ainda ativos (ABERTO ou EM_ANDAMENTO)
 async function plantoesDoDia(crm, dataRef = null) {
   const pool = await getPool();
   const request = pool.request().input("crm", sql.VarChar, crm);
-  let filtroData = "AND CAST(DATA AS DATE) = CAST(GETDATE() AS DATE)";
+  let filtroData = "AND CAST(e.DATA AS DATE) = CAST(GETDATE() AS DATE)";
 
   if (dataRef) {
     request.input("dataRef", sql.Date, dataRef);
-    filtroData = "AND CAST(DATA AS DATE) = @dataRef";
+    filtroData = "AND CAST(e.DATA AS DATE) = @dataRef";
   }
 
   const result = await request.query(`
-    SELECT * FROM ESCALAMEDICA
-    WHERE CRM_ESCALADO = @crm
+    ${SELECT_PLANTAO_ENRIQUECIDO}
+    WHERE e.CRM_ESCALADO = @crm
       ${filtroData}
-      AND STATUS IN ('ABERTO', 'EM_ANDAMENTO', 'PENDENTE_JUSTIFICATIVA')
-    ORDER BY HORAINICIO ASC
+      AND e.STATUS IN ('ABERTO', 'EM_ANDAMENTO', 'PENDENTE_JUSTIFICATIVA')
+    ORDER BY e.HORAINICIO ASC
   `);
   return result.recordset.map(normalizarPlantao);
 }
 
-// Todos os plantoes do medico (feitos e pendentes), nao so hoje
 async function todosPlantoes(crm) {
   const pool = await getPool();
   const result = await pool.request()
     .input("crm", sql.VarChar, crm)
     .query(`
-      SELECT * FROM ESCALAMEDICA
-      WHERE CRM_ESCALADO = @crm
-      ORDER BY DATA DESC, HORAINICIO DESC
+      ${SELECT_PLANTAO_ENRIQUECIDO}
+      WHERE e.CRM_ESCALADO = @crm
+      ORDER BY e.DATA DESC, e.HORAINICIO DESC
     `);
   return result.recordset.map(normalizarPlantao);
 }
@@ -67,7 +92,6 @@ async function registrosDoPlantao(idPlantao) {
   }));
 }
 
-// Determina se ENTRADA ou SAIDA é o próximo passo, e se está dentro da janela permitida
 function avaliarJanela(plantao, registros) {
   const proximoTipo = registros.length === 0 ? "ENTRADA" : "SAIDA";
   const horaReferencia = proximoTipo === "ENTRADA" ? plantao.HORAINICIO : plantao.HORAFIM;
@@ -98,7 +122,6 @@ function avaliarJanela(plantao, registros) {
   const dentroDaJanela = diffMinAbs <= TOLERANCIA_MIN;
   const antesDaJanela = diffMs < 0 && !dentroDaJanela;
   const depoisDaJanela = diffMs > 0 && !dentroDaJanela;
-  // Justificativa só após passar da tolerância (depois do horário + tolerancia)
   const podeJustificar = depoisDaJanela;
   const podeIniciar = dentroDaJanela && plantao.STATUS !== "CONCLUIDO" && plantao.STATUS !== "CANCELADO";
 

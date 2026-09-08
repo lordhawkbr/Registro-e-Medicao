@@ -42,9 +42,10 @@
         <div>
           <strong>Plantão #<%= plantao.IDPLANTAO %></strong>
           <p class="plantao-horario"><%= plantao.HORARIO_FORMATADO %></p>
-          <p class="muted">Filial <%= plantao.CODFILIAL %> · Setor <%= plantao.CODCCUSTO %></p>
+          <p class="muted"><%= plantao.FILIAL_NOME %> · <%= plantao.SETOR_NOME %></p>
+          <% if (plantao.TIPO_NOME) { %><p class="muted"><%= plantao.TIPO_NOME %></p><% } %>
         </div>
-        <span class="badge badge-<%= plantao.STATUS.toLowerCase() %>"><%= plantao.STATUS %></span>
+        <span class="badge badge-<%= plantao.CONCLUSAO.classe %>"><%= plantao.CONCLUSAO.label %></span>
       </div>
 
       <ul class="lista-registros">
