@@ -10,7 +10,7 @@ async function autenticar(crm, crmUf, cpf) {
     .input("crmUf", sql.VarChar, crmUf.trim().toUpperCase())
     .query(`
       SELECT NOMECOMPLETO, CRM, UFCRM, CPF, ATIVO
-      FROM Corporerm.dbo.ZMDMEDICOSPJ
+      FROM ZMDMEDICOSPJ
       WHERE LTRIM(RTRIM(CRM)) = @crm AND LTRIM(RTRIM(UFCRM)) = @crmUf
     `);
 
@@ -43,7 +43,7 @@ async function listarPorFilialEspecialidade(codFilial, especialidade) {
 
   const result = await request.query(`
     SELECT CODFILIAL, NOMECOMPLETO, ESPECIALIDADE, CRM, UFCRM
-    FROM Corporerm.dbo.ZMDMEDICOSPJ
+    FROM ZMDMEDICOSPJ
     WHERE ATIVO = 'SIM'
       AND CODFILIAL = @codFilial
       ${whereEsp}

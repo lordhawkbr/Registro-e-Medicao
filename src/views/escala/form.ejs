@@ -136,6 +136,7 @@
     }
     const res = await fetch(`/api/tipos-plantao?codFilial=${codFilial}&codCCusto=${encodeURIComponent(codCCusto)}`);
     const tipos = await res.json();
+    console.log(tipos)
     selTipoPlantao.innerHTML = '<option value="">Selecione o tipo de plantão</option>' +
       tipos.map(t => {
         const esp = t.ESPECIALIDADE != null ? String(t.ESPECIALIDADE) : "";

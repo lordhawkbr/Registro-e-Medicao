@@ -51,7 +51,7 @@ async function listarTiposPlantao(codFilial, codCCusto) {
     .input("codFilial", sql.Int, codFilial)
     .input("codCCusto", sql.VarChar, codCCusto)
     .query(`
-      SELECT IDPRD, DESCRICAO, TURNO, TIPO, ESPECIALIDADE
+      SELECT ID AS IDPRD, DESCRICAO, TURNO, TIPO, ESPECIALIDADE
       FROM ZMDTIPOPLANTAOMEDICO2
       WHERE CODFILIAL = @codFilial AND CODCCUSTO = @codCCusto AND ATIVO = 1
       ORDER BY DESCRICAO
