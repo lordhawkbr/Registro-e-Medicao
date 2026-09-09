@@ -2004,13 +2004,40 @@ body.body-admin .container.container-calendario {
   align-items: center;
   gap: 4px;
   min-width: 0;
+  width: 100%;
   padding: 2px 5px;
+  border: 0;
   border-radius: 3px;
   text-decoration: none;
+  text-align: left;
+  font: inherit;
   font-size: 11px;
   font-weight: 600;
   line-height: 1.25;
   max-width: 100%;
+  cursor: pointer;
+  background: #6b7280;
+  color: #fff;
+}
+
+.plantao-detalhe-dialog .plantao-modal-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.plantao-detalhe-dialog .plantao-modal-grid > div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.plantao-detalhe-dialog .plantao-modal-span {
+  grid-column: 1 / -1;
+}
+
+.plantao-detalhe-dialog .cell-medico {
+  margin-top: 6px;
 }
 
 .cal-event-dot {

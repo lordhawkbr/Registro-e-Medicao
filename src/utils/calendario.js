@@ -19,6 +19,13 @@ function statusCalendario(plantao, hojeChave = formatarDataInput(new Date())) {
 
   const dataPlantao = plantao?.DATA_INPUT || formatarDataInput(plantao?.DATA) || "";
   const passado = dataPlantao && dataPlantao < hojeChave;
+
+  // Expirado / justificativa reprovada em dia passado = não realizado
+  if (codigo === "EXPIRADO") return STATUS_CALENDARIO.nao_realizado;
+  if (codigo === "JUSTIFICATIVA_REPROVADA" && passado) {
+    return STATUS_CALENDARIO.nao_realizado;
+  }
+
   // Passado sem registro de entrada = não realizado
   if (passado && (codigo === "PENDENTE_ENTRADA" || codigo === "ABERTO" || !codigo)) {
     return STATUS_CALENDARIO.nao_realizado;
