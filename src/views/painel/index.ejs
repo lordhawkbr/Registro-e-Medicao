@@ -60,8 +60,8 @@
       <% } %>
 
       <div class="<%= plantoesDoDia.length > 1 ? 'plantao-lista-compacta' : '' %>">
-        <% plantoesDoDia.forEach(({ plantao, registros, avaliacao }) => { %>
-          <%- include('../partials/plantaoTile', { plantao, registros, avaliacao, compacto: plantoesDoDia.length > 1 }) %>
+        <% plantoesDoDia.forEach(({ plantao, registros, avaliacao, justificativas }) => { %>
+          <%- include('../partials/plantaoTile', { plantao, registros, avaliacao, justificativas, compacto: plantoesDoDia.length > 1 }) %>
         <% }) %>
       </div>
     </section>
@@ -73,7 +73,6 @@
         const navMeses = document.getElementById("calendarioNavMeses");
         const btn = document.getElementById("btnToggleCalendario");
         if (!card || !btn) return;
-
         const KEY = "escala.calendarioVisivel";
         function aplicar(visivel) {
           grid.style.display = visivel ? "grid" : "none";
@@ -83,7 +82,6 @@
           btn.textContent = visivel ? "Ocultar calendário" : "Mostrar calendário";
           try { localStorage.setItem(KEY, visivel ? "1" : "0"); } catch (e) {}
         }
-
         let visivel = true;
         try { visivel = localStorage.getItem(KEY) !== "0"; } catch (e) {}
         aplicar(visivel);
@@ -102,8 +100,8 @@
       <% } %>
 
       <div class="<%= plantoesAbertos.length > 1 ? 'plantao-lista-compacta' : '' %>">
-        <% plantoesAbertos.forEach(({ plantao, registros, avaliacao }) => { %>
-          <%- include('../partials/plantaoTile', { plantao, registros, avaliacao, compacto: plantoesAbertos.length > 1 }) %>
+        <% plantoesAbertos.forEach(({ plantao, registros, avaliacao, justificativas }) => { %>
+          <%- include('../partials/plantaoTile', { plantao, registros, avaliacao, justificativas, compacto: plantoesAbertos.length > 1 }) %>
         <% }) %>
       </div>
     </section>
@@ -136,4 +134,61 @@
     </section>
 
   <% } %>
+
+  <div class="plantao-modal" id="plantaoModal" hidden>
+    <div class="plantao-modal-backdrop" data-plantao-modal-fechar></div>
+    <div class="plantao-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="plantaoModalTitulo">
+      <div class="plantao-modal-header">
+        <h3 id="plantaoModalTitulo">Detalhes do plantão</h3>
+        <button type="button" class="btn btn-ghost btn-sm" data-plantao-modal-fechar aria-label="Fechar">✕</button>
+      </div>
+      <div class="plantao-modal-content" id="plantaoModalContent"></div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      const modal = document.getElementById("plantaoModal");
+      const modalContent = document.getElementById("plantaoModalContent");
+      const modalTitulo = document.getElementById("plantaoModalTitulo");
+      if (!modal || !modalContent) return;
+
+      function fecharModal() {
+        modal.hidden = true;
+        modalContent.innerHTML = "";
+        document.body.classList.remove("modal-aberta");
+      }
+
+      function abrirModal(tile) {
+        const tpl = tile.querySelector("[data-plantao-detalhe]");
+        if (!tpl) return;
+        const id = tile.getAttribute("data-id") || "";
+        modalTitulo.textContent = id ? ("Plantão #" + id) : "Detalhes do plantão";
+        modalContent.innerHTML = tpl.innerHTML;
+        modal.hidden = false;
+        document.body.classList.add("modal-aberta");
+      }
+
+      document.querySelectorAll("[data-plantao-modal]").forEach(tile => {
+        tile.addEventListener("click", (e) => {
+          if (e.target.closest("[data-plantao-actions], a, button, form, input, label")) return;
+          abrirModal(tile);
+        });
+        tile.addEventListener("keydown", (e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            if (e.target.closest("[data-plantao-actions], a, button, form")) return;
+            e.preventDefault();
+            abrirModal(tile);
+          }
+        });
+      });
+
+      modal.addEventListener("click", (e) => {
+        if (e.target.closest("[data-plantao-modal-fechar]")) fecharModal();
+      });
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape" && !modal.hidden) fecharModal();
+      });
+    })();
+  </script>
 </div>

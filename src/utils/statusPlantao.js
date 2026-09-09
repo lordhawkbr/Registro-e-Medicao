@@ -40,6 +40,28 @@ function labelStatusAprovacao(status) {
   };
 }
 
+function parseDataExpiracao(valor) {
+  if (!valor) return null;
+  if (valor instanceof Date && !Number.isNaN(valor.getTime())) return valor;
+  const d = new Date(valor);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+/** Plantão passou da DATAEXPIRACAO (fim + 15 min + 30 dias). */
+function estaExpirado(plantao, agora = new Date()) {
+  const exp = parseDataExpiracao(plantao?.DATAEXPIRACAO);
+  if (!exp) return false;
+  return agora.getTime() > exp.getTime();
+}
+
+function medicoConcluido(registros = [], justificativas = []) {
+  const regs = Array.isArray(registros) ? registros : [];
+  const justs = Array.isArray(justificativas) ? justificativas : [];
+  const temSaida = regs.some(r => String(r.TIPO || "").toUpperCase() === "SAIDA");
+  const justAprov = justs.some(j => String(j.STATUSAPROVACAO || "").toUpperCase() === "APROVADO");
+  return temSaida || justAprov;
+}
+
 /**
  * Status de conclusão sob a ótica de UM médico (plantão compartilhado).
  * Ignora STATUS global do plantão, exceto CANCELADO.
@@ -56,6 +78,8 @@ function statusConclusaoMedico(plantao, registros = [], justificativas = []) {
   const temSaida = regs.some(r => String(r.TIPO || "").toUpperCase() === "SAIDA");
   const justPend = justs.find(j => String(j.STATUSAPROVACAO || "").toUpperCase() === "PENDENTE");
   const justAprov = justs.find(j => String(j.STATUSAPROVACAO || "").toUpperCase() === "APROVADO");
+  const justReprov = justs.find(j => String(j.STATUSAPROVACAO || "").toUpperCase() === "REPROVADO");
+  const completo = Boolean(justAprov) || (temEntrada && temSaida);
 
   if (justAprov) {
     return { codigo: "JUSTIFICADO", label: "Concluído (justificado)", classe: "justificado" };
@@ -65,6 +89,18 @@ function statusConclusaoMedico(plantao, registros = [], justificativas = []) {
   }
   if (justPend) {
     return { codigo: "JUSTIFICATIVA_PENDENTE", label: "Justificativa em análise", classe: "pendente_justificativa" };
+  }
+
+  // Expirado tem prioridade sobre "pendente" e sobre reprovada antiga
+  if (!completo && estaExpirado(plantao)) {
+    if (justReprov) {
+      return { codigo: "EXPIRADO", label: "Expirado (justificativa reprovada)", classe: "expirado" };
+    }
+    return { codigo: "EXPIRADO", label: "Expirado", classe: "expirado" };
+  }
+
+  if (justReprov) {
+    return { codigo: "JUSTIFICATIVA_REPROVADA", label: "Justificativa reprovada", classe: "reprovado" };
   }
   if (temEntrada) {
     return { codigo: "PENDENTE_SAIDA", label: "Pendente saída", classe: "pendente_saida" };
@@ -76,20 +112,33 @@ function statusConclusaoMedico(plantao, registros = [], justificativas = []) {
 function statusConclusao(plantao) {
   const status = String(plantao.STATUS || "").toUpperCase();
   const qtdReg = Number(plantao.QTD_REGISTROS || 0);
-  const qtdJust = Number(plantao.QTD_JUSTIFICATIVAS || 0);
   const justAprovada = Number(plantao.QTD_JUST_APROVADAS || 0);
+  const justPend = Number(plantao.QTD_JUST_PENDENTES || 0);
+  const justReprov = Number(plantao.QTD_JUST_REPROVADAS || 0);
 
   if (status === "CANCELADO") {
     return { codigo: "CANCELADO", label: "Cancelado", classe: "cancelado" };
   }
-  if (status === "PENDENTE_JUSTIFICATIVA") {
+  if (status === "PENDENTE_JUSTIFICATIVA" || justPend > 0) {
     return { codigo: "JUSTIFICATIVA_PENDENTE", label: "Justificativa em análise", classe: "pendente_justificativa" };
   }
   if (status === "CONCLUIDO") {
-    if (justAprovada > 0 || qtdJust > 0) {
+    if (justAprovada > 0) {
       return { codigo: "JUSTIFICADO", label: "Concluído (justificado)", classe: "justificado" };
     }
     return { codigo: "REGISTRADO", label: "Registrado completamente", classe: "registrado" };
+  }
+
+  const incompleto = justAprovada === 0;
+  if (incompleto && estaExpirado(plantao)) {
+    if (justReprov > 0) {
+      return { codigo: "EXPIRADO", label: "Expirado (justificativa reprovada)", classe: "expirado" };
+    }
+    return { codigo: "EXPIRADO", label: "Expirado", classe: "expirado" };
+  }
+
+  if (justReprov > 0) {
+    return { codigo: "JUSTIFICATIVA_REPROVADA", label: "Justificativa reprovada", classe: "reprovado" };
   }
   if (status === "EM_ANDAMENTO" || qtdReg === 1) {
     return { codigo: "PENDENTE_SAIDA", label: "Pendente saída", classe: "pendente_saida" };
@@ -101,7 +150,7 @@ function podeEditarOuCancelar(plantao) {
   const status = String(plantao.STATUS || "").toUpperCase();
   const qtdReg = Number(plantao.QTD_REGISTROS || 0);
   const qtdJust = Number(plantao.QTD_JUSTIFICATIVAS || 0);
-  return status === "ABERTO" && qtdReg === 0 && qtdJust === 0;
+  return status === "ABERTO" && qtdReg === 0 && qtdJust === 0 && !estaExpirado(plantao);
 }
 
 function limparNomeFilial(nome) {
@@ -112,7 +161,6 @@ function resolverNomeEspecialidade(codigo, tipoDescricao) {
   const cod = String(codigo == null ? "" : codigo).trim();
   const tipo = String(tipoDescricao || "").trim();
   if (!cod && !tipo) return "";
-  // Já parece nomenclatura (tem letras além de código curto)
   if (cod && /[A-Za-zÀ-ÿ]{3,}/.test(cod) && !/^\d+$/.test(cod)) return cod;
   if (tipo) return tipo;
   return cod;
@@ -123,6 +171,9 @@ module.exports = {
   STATUS_APROVACAO,
   labelTipoAusencia,
   labelStatusAprovacao,
+  parseDataExpiracao,
+  estaExpirado,
+  medicoConcluido,
   statusConclusao,
   statusConclusaoMedico,
   podeEditarOuCancelar,

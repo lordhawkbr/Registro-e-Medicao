@@ -36,8 +36,8 @@
   <% } %>
 
   <div class="<%= plantoes.length > 1 ? 'plantao-lista-compacta' : '' %> medico-lista-scroll">
-    <% plantoes.forEach(({ plantao, registros, avaliacao }) => { %>
-      <%- include('../partials/plantaoTile', { plantao, registros, avaliacao, compacto: plantoes.length > 1 }) %>
+    <% plantoes.forEach(({ plantao, registros, avaliacao, justificativas }) => { %>
+      <%- include('../partials/plantaoTile', { plantao, registros, avaliacao, justificativas, compacto: plantoes.length > 1 }) %>
     <% }) %>
   </div>
 </div>

@@ -99,8 +99,8 @@ async function index(req, res, next) {
     const plantoesAbertos = plantoesComRegistros
       .filter(({ plantao, registros, avaliacao }) => {
         if (plantao.STATUS === "CANCELADO") return false;
-        if (avaliacao && avaliacao.concluidoParaMedico) return false;
-        if (["REGISTRADO", "JUSTIFICADO", "JUSTIFICATIVA_PENDENTE"].includes(plantao.CONCLUSAO?.codigo)) {
+        if (avaliacao && (avaliacao.concluidoParaMedico || avaliacao.expirado)) return false;
+        if (["REGISTRADO", "JUSTIFICADO", "JUSTIFICATIVA_PENDENTE", "EXPIRADO", "JUSTIFICATIVA_REPROVADA"].includes(plantao.CONCLUSAO?.codigo)) {
           return false;
         }
         const temEntrada = registros.some(r => r.TIPO === "ENTRADA");
