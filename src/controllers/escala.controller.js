@@ -83,7 +83,19 @@ async function calendario(req, res, next) {
         IDPLANTAO: ev.IDPLANTAO,
         TITULO_CAL: ev.TITULO_CAL,
         PODE_EDITAR: !!ev.PODE_EDITAR,
-        STATUS_CAL: ev.STATUS_CAL
+        STATUS_CAL: ev.STATUS_CAL,
+        DATA_FMT: ev.DATA_INPUT ? String(ev.DATA_INPUT).split("-").reverse().join("/") : "",
+        HORARIO: ev.HORARIO_CURTO || ev.HORARIO_FORMATADO || "",
+        FILIAL: ev.FILIAL_NOME || String(ev.CODFILIAL || ""),
+        SETOR: ev.SETOR_NOME || ev.CODCCUSTO || "",
+        MEDICO: ev.MEDICO_LABEL || ev.MEDICO_NOME || ev.CRM_ESCALADO || "",
+        ESPECIALIDADE: ev.ESPECIALIDADE_NOME || "",
+        CONCLUSAO: ev.CONCLUSAO || null,
+        MEDICOS: (ev.MEDICOS || []).map(m => ({
+          nome: m.nome,
+          crm: m.crm,
+          conclusao: m.CONCLUSAO || null
+        }))
       }));
     });
 

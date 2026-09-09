@@ -135,15 +135,17 @@
               </div>
               <div class="cal-day-events">
                 <% dia.eventos.forEach(ev => { %>
-                  <a
+                  <button
+                    type="button"
                     class="cal-event <%= ev.STATUS_CAL.classe %>"
-                    href="<%= ev.PODE_EDITAR ? `/escala/${ev.IDPLANTAO}/editar` : `/escala` %>"
+                    data-plantao-id="<%= ev.IDPLANTAO %>"
+                    data-date="<%= dia.chave %>"
                     title="<%= ev.TITULO_CAL %> · <%= ev.STATUS_CAL.label %>"
-                    onclick="event.stopPropagation()"
+                    onclick="event.stopPropagation(); abrirDetalhePlantao(<%= ev.IDPLANTAO %>, '<%= dia.chave %>')"
                   >
                     <span class="cal-event-dot" aria-hidden="true"></span>
                     <span class="cal-event-text"><%= ev.TITULO_CAL %></span>
-                  </a>
+                  </button>
                 <% }) %>
                 <% if (dia.ocultos > 0) { %>
                   <button
@@ -176,6 +178,17 @@
   </form>
 </dialog>
 
+<dialog class="cal-day-dialog plantao-detalhe-dialog" id="dlgPlantaoDetalhe">
+  <div class="cal-day-dialog-inner">
+    <header class="cal-day-dialog-head">
+      <h3 id="dlgPlantaoTitulo">Detalhes do plantão</h3>
+      <button type="button" class="btn btn-ghost" id="dlgPlantaoFechar" aria-label="Fechar">✕</button>
+    </header>
+    <div class="cal-day-dialog-body" id="dlgPlantaoCorpo"></div>
+    <footer class="cal-day-dialog-foot" id="dlgPlantaoAcoes"></footer>
+  </div>
+</dialog>
+
 <script>
 (function () {
   const porDia = <%- JSON.stringify(porDiaJson || {}) %>;
@@ -183,9 +196,93 @@
   const lista = document.getElementById("dlgDiaLista");
   const titulo = document.getElementById("dlgDiaTitulo");
   const linkNovo = document.getElementById("dlgDiaNovo");
+  const dlgDetalhe = document.getElementById("dlgPlantaoDetalhe");
+  const detalheTitulo = document.getElementById("dlgPlantaoTitulo");
+  const detalheCorpo = document.getElementById("dlgPlantaoCorpo");
+  const detalheAcoes = document.getElementById("dlgPlantaoAcoes");
+  const detalheFechar = document.getElementById("dlgPlantaoFechar");
+
+  function escapar(texto) {
+    return String(texto == null ? "" : texto)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
+  function buscarEvento(idPlantao, data) {
+    const id = Number(idPlantao);
+    if (data && porDia[data]) {
+      const achou = porDia[data].find(ev => Number(ev.IDPLANTAO) === id);
+      if (achou) return achou;
+    }
+    for (const listaDia of Object.values(porDia)) {
+      const achou = (listaDia || []).find(ev => Number(ev.IDPLANTAO) === id);
+      if (achou) return achou;
+    }
+    return null;
+  }
 
   function irNovo(data) {
     window.location.href = "/escala/novo?data=" + encodeURIComponent(data) + "&origem=calendario";
+  }
+
+  window.abrirDetalhePlantao = function (idPlantao, data) {
+    const ev = buscarEvento(idPlantao, data);
+    if (!ev || !dlgDetalhe) return;
+
+    detalheTitulo.textContent = "Plantão #" + ev.IDPLANTAO;
+    const conclusaoLabel = (ev.CONCLUSAO && ev.CONCLUSAO.label)
+      || (ev.STATUS_CAL && ev.STATUS_CAL.label)
+      || "—";
+    const conclusaoClasse = (ev.CONCLUSAO && ev.CONCLUSAO.classe) || "cancelado";
+
+    let medicosHtml = "";
+    if (ev.MEDICOS && ev.MEDICOS.length) {
+      medicosHtml = ev.MEDICOS.map(m => {
+        const tag = m.conclusao
+          ? '<span class="tag tag-' + escapar(m.conclusao.classe) + '">' + escapar(m.conclusao.label) + "</span>"
+          : "";
+        return '<div class="cell-medico"><div class="cell-nome">' + escapar(m.nome || m.crm) +
+          '</div><div class="muted">' + escapar(m.crm || "") + "</div>" + tag + "</div>";
+      }).join("");
+    } else {
+      medicosHtml = "<div>" + escapar(ev.MEDICO || "—") + "</div>";
+    }
+
+    detalheCorpo.innerHTML =
+      '<div class="plantao-modal-grid">' +
+        '<div><span class="muted">Data</span><strong>' + escapar(ev.DATA_FMT || "—") + "</strong></div>" +
+        '<div><span class="muted">Horário</span><strong>' + escapar(ev.HORARIO || "—") + "</strong></div>" +
+        '<div><span class="muted">Filial</span><strong>' + escapar(ev.FILIAL || "—") + "</strong></div>" +
+        '<div><span class="muted">Setor</span><strong>' + escapar(ev.SETOR || "—") + "</strong></div>" +
+        (ev.ESPECIALIDADE
+          ? '<div class="plantao-modal-span"><span class="muted">Especialidade</span><strong>' + escapar(ev.ESPECIALIDADE) + "</strong></div>"
+          : "") +
+        '<div class="plantao-modal-span"><span class="muted">Conclusão</span>' +
+          '<span class="tag tag-' + escapar(conclusaoClasse) + '">' + escapar(conclusaoLabel) + "</span></div>" +
+        '<div class="plantao-modal-span"><span class="muted">Médico(s)</span>' + medicosHtml + "</div>" +
+      "</div>";
+
+    let acoes = "";
+    if (ev.PODE_EDITAR) {
+      acoes += '<a class="btn btn-primary" href="/escala/' + ev.IDPLANTAO + '/editar">Editar plantão</a>';
+    }
+    acoes += '<button type="button" class="btn" id="dlgPlantaoFechar2">Fechar</button>';
+    detalheAcoes.innerHTML = acoes;
+
+    const fechar2 = document.getElementById("dlgPlantaoFechar2");
+    if (fechar2) fechar2.addEventListener("click", () => dlgDetalhe.close());
+    if (typeof dlgDetalhe.showModal === "function") dlgDetalhe.showModal();
+  };
+
+  if (detalheFechar) {
+    detalheFechar.addEventListener("click", () => dlgDetalhe.close());
+  }
+  if (dlgDetalhe) {
+    dlgDetalhe.addEventListener("click", (e) => {
+      if (e.target === dlgDetalhe) dlgDetalhe.close();
+    });
   }
 
   document.querySelectorAll(".cal-day:not(.is-empty)").forEach(cell => {
@@ -210,13 +307,13 @@
     titulo.textContent = "Plantões · " + d + "/" + m + "/" + y;
     linkNovo.href = "/escala/novo?data=" + encodeURIComponent(data) + "&origem=calendario";
     lista.innerHTML = eventos.map(ev => {
-      const href = ev.PODE_EDITAR ? ("/escala/" + ev.IDPLANTAO + "/editar") : "/escala";
       const classe = (ev.STATUS_CAL && ev.STATUS_CAL.classe) || "cal-evt-pendente";
       const label = (ev.STATUS_CAL && ev.STATUS_CAL.label) || "";
       const text = ev.TITULO_CAL || ("Plantão #" + ev.IDPLANTAO);
-      return '<a class="cal-event cal-event-full ' + classe + '" href="' + href + '">' +
+      return '<button type="button" class="cal-event cal-event-full ' + classe + '" ' +
+        'onclick="abrirDetalhePlantao(' + ev.IDPLANTAO + ', \'' + data + '\')">' +
         '<span class="cal-event-text">' + text + '</span>' +
-        '<span class="cal-event-status">' + label + '</span></a>';
+        '<span class="cal-event-status">' + label + "</span></button>";
     }).join("") || '<p class="muted">Nenhum plantão.</p>';
     if (typeof dlg.showModal === "function") dlg.showModal();
   };
