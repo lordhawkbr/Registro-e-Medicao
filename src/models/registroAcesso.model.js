@@ -7,7 +7,7 @@ const {
   formatarHoraInput,
   formatarDataInput
 } = require("../utils/horario");
-const { statusConclusao, limparNomeFilial, resolverNomeEspecialidade } = require("../utils/statusPlantao");
+const { statusConclusao, limparNomeFilial, resolverNomeEspecialidade, estaExpirado } = require("../utils/statusPlantao");
 const { sqlFiltroCrmEscalado, parseCrmLista } = require("../utils/crm");
 
 const TOLERANCIA_MIN = 15;
@@ -28,7 +28,15 @@ const SELECT_PLANTAO_ENRIQUECIDO = `
     (
       SELECT COUNT(*) FROM JUSTIFICATIVAAUSENCIA j
       WHERE j.IDPLANTAO = e.IDPLANTAO AND j.STATUSAPROVACAO = 'APROVADO'
-    ) AS QTD_JUST_APROVADAS
+    ) AS QTD_JUST_APROVADAS,
+    (
+      SELECT COUNT(*) FROM JUSTIFICATIVAAUSENCIA j
+      WHERE j.IDPLANTAO = e.IDPLANTAO AND j.STATUSAPROVACAO = 'PENDENTE'
+    ) AS QTD_JUST_PENDENTES,
+    (
+      SELECT COUNT(*) FROM JUSTIFICATIVAAUSENCIA j
+      WHERE j.IDPLANTAO = e.IDPLANTAO AND j.STATUSAPROVACAO = 'REPROVADO'
+    ) AS QTD_JUST_REPROVADAS
   FROM ESCALAMEDICA e
   LEFT JOIN GFILIAL f ON f.CODFILIAL = e.CODFILIAL
   LEFT JOIN GCCUSTO c ON c.CODCCUSTO = e.CODCCUSTO
@@ -107,6 +115,7 @@ function avaliarJanela(plantao, registros, crm = null) {
     : (registros || []);
   const proximoTipo = registrosDoMedico.length === 0 ? "ENTRADA" : "SAIDA";
   const horaReferencia = proximoTipo === "ENTRADA" ? plantao.HORAINICIO : plantao.HORAFIM;
+  const expirado = estaExpirado(plantao);
 
   let alvo;
   if (proximoTipo === "ENTRADA") {
@@ -125,6 +134,7 @@ function avaliarJanela(plantao, registros, crm = null) {
       depoisDaJanela: false,
       podeJustificar: false,
       podeIniciar: false,
+      expirado,
       diffMin: null
     };
   }
@@ -134,20 +144,22 @@ function avaliarJanela(plantao, registros, crm = null) {
   const dentroDaJanela = diffMinAbs <= TOLERANCIA_MIN;
   const antesDaJanela = diffMs < 0 && !dentroDaJanela;
   const depoisDaJanela = diffMs > 0 && !dentroDaJanela;
-  const podeJustificar = depoisDaJanela;
   const jaConcluiu = registrosDoMedico.some(r => r.TIPO === "SAIDA");
-  const podeIniciar = dentroDaJanela
+  const podeIniciar = !expirado
+    && dentroDaJanela
     && !jaConcluiu
     && plantao.STATUS !== "CANCELADO";
+  const podeJustificar = !expirado && depoisDaJanela && !jaConcluiu;
 
   return {
     proximoTipo: jaConcluiu ? "SAIDA" : proximoTipo,
     dentroDaJanela,
     antesDaJanela,
     depoisDaJanela,
-    podeJustificar: podeJustificar && !jaConcluiu,
+    podeJustificar,
     podeIniciar,
     concluidoParaMedico: jaConcluiu,
+    expirado,
     diffMin: Math.round(diffMinAbs)
   };
 }

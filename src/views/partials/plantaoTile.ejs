@@ -1,18 +1,31 @@
 <%
-  const conclusao = plantao.CONCLUSAO || { label: "—", classe: "cancelado" };
+  const conclusao = plantao.CONCLUSAO || { label: "—", classe: "cancelado", codigo: "" };
   const especialidade = plantao.ESPECIALIDADE_NOME || plantao.ESPECIALIDADE_CODIGO || "";
-  const codigosSemAcao = ["REGISTRADO", "JUSTIFICADO", "CANCELADO", "JUSTIFICATIVA_PENDENTE"];
+  const codigosSemAcao = ["REGISTRADO", "JUSTIFICADO", "CANCELADO", "JUSTIFICATIVA_PENDENTE", "EXPIRADO"];
   const semAcoes = codigosSemAcao.includes(conclusao.codigo)
     || plantao.STATUS === "CANCELADO"
-    || (avaliacao && avaliacao.concluidoParaMedico);
+    || (avaliacao && (avaliacao.concluidoParaMedico || avaliacao.expirado));
 
   const entrada = (registros || []).find(r => String(r.TIPO || "").toUpperCase() === "ENTRADA");
   const saida = (registros || []).find(r => String(r.TIPO || "").toUpperCase() === "SAIDA");
   const batidas = [];
   if (entrada) batidas.push(`ENTRADA às ${entrada.HORABATIDA_FMT || entrada.HORABATIDA}`);
   if (saida) batidas.push(`SAÍDA às ${saida.HORABATIDA_FMT || saida.HORABATIDA}`);
+
+  const justs = typeof justificativas !== "undefined" && Array.isArray(justificativas) ? justificativas : [];
+  const podeEditar = Boolean(plantao.PODE_EDITAR);
+  const dataFmt = plantao.DATA_INPUT
+    ? plantao.DATA_INPUT.split("-").reverse().join("/")
+    : "";
 %>
-<article class="plantao-tile <%= typeof compacto !== 'undefined' && compacto ? 'plantao-tile-compact' : '' %>">
+<article
+  class="plantao-tile plantao-tile-clicavel <%= typeof compacto !== 'undefined' && compacto ? 'plantao-tile-compact' : '' %>"
+  data-plantao-modal
+  data-id="<%= plantao.IDPLANTAO %>"
+  tabindex="0"
+  role="button"
+  aria-label="Ver detalhes do plantão <%= plantao.IDPLANTAO %>"
+>
   <h3 class="plantao-titulo">
     Plantão #<%= plantao.IDPLANTAO %> -
     <strong>Filial <%= plantao.CODFILIAL %></strong>
@@ -31,7 +44,7 @@
     <p class="plantao-batidas"><%= batidas.join(" | ") %></p>
   <% } %>
 
-  <div class="plantao-actions <%= typeof compacto !== 'undefined' && compacto ? 'plantao-actions-compact' : '' %>">
+  <div class="plantao-actions <%= typeof compacto !== 'undefined' && compacto ? 'plantao-actions-compact' : '' %>" data-plantao-actions>
     <% if (semAcoes) { %>
       <span class="muted">Sem ações disponíveis</span>
     <% } else if (avaliacao && avaliacao.podeIniciar) { %>
@@ -42,7 +55,9 @@
       </form>
     <% } else if (avaliacao) { %>
       <button type="button" class="btn <%= typeof compacto !== 'undefined' && compacto ? '' : 'btn-block' %>" disabled>
-        <% if (avaliacao.antesDaJanela) { %>
+        <% if (avaliacao.expirado) { %>
+          Plantão expirado
+        <% } else if (avaliacao.antesDaJanela) { %>
           Ainda não liberado (~<%= avaliacao.diffMin %> min)
         <% } else if (avaliacao.depoisDaJanela) { %>
           Fora da janela (+<%= avaliacao.diffMin %> min)
@@ -55,4 +70,84 @@
       <% } %>
     <% } %>
   </div>
+
+  <template data-plantao-detalhe>
+    <div class="plantao-modal-body">
+      <div class="plantao-modal-grid">
+        <div>
+          <span class="muted">Plantão</span>
+          <strong>#<%= plantao.IDPLANTAO %></strong>
+        </div>
+        <div>
+          <span class="muted">Data</span>
+          <strong><%= dataFmt || "—" %></strong>
+        </div>
+        <div>
+          <span class="muted">Filial</span>
+          <strong><%= plantao.FILIAL_NOME || plantao.CODFILIAL %></strong>
+        </div>
+        <div>
+          <span class="muted">Setor</span>
+          <strong><%= plantao.SETOR_NOME || plantao.CODCCUSTO || "—" %></strong>
+        </div>
+        <div class="plantao-modal-span">
+          <span class="muted">Horário</span>
+          <strong><%= plantao.HORARIO_FORMATADO %></strong>
+        </div>
+        <% if (especialidade) { %>
+          <div class="plantao-modal-span">
+            <span class="muted">Especialidade</span>
+            <strong><%= especialidade %></strong>
+          </div>
+        <% } %>
+        <div class="plantao-modal-span">
+          <span class="muted">Conclusão</span>
+          <span class="tag tag-<%= conclusao.classe %>"><%= conclusao.label %></span>
+        </div>
+      </div>
+
+      <h4 class="plantao-modal-subtitle">Registros de acesso</h4>
+      <% if (!batidas.length) { %>
+        <p class="muted">Nenhum registro de entrada/saída.</p>
+      <% } else { %>
+        <ul class="plantao-modal-list">
+          <% if (entrada) { %>
+            <li>Entrada às <%= entrada.HORABATIDA_FMT || entrada.HORABATIDA %></li>
+          <% } %>
+          <% if (saida) { %>
+            <li>Saída às <%= saida.HORABATIDA_FMT || saida.HORABATIDA %></li>
+          <% } %>
+        </ul>
+      <% } %>
+
+      <h4 class="plantao-modal-subtitle">Justificativas</h4>
+      <% if (!justs.length) { %>
+        <p class="muted">Nenhuma justificativa.</p>
+      <% } else { %>
+        <ul class="plantao-modal-list">
+          <% justs.forEach(j => { %>
+            <li>
+              <span class="tag tag-<%= j.TIPO_CLASSE || 'tipo-outro' %>"><%= j.TIPO_LABEL || j.TIPOAUSENCIA %></span>
+              <span class="tag tag-<%= (j.STATUS_CLASSE || j.STATUSAPROVACAO || '').toLowerCase() === 'aprovado' ? 'justificado' : ((j.STATUS_CLASSE || j.STATUSAPROVACAO || '').toLowerCase() === 'reprovado' ? 'reprovado' : 'pendente_justificativa') %>">
+                <%= j.STATUS_LABEL || j.STATUSAPROVACAO %>
+              </span>
+              <% if (j.MOTIVO) { %>
+                <div class="muted"><%= j.MOTIVO %></div>
+              <% } %>
+            </li>
+          <% }) %>
+        </ul>
+      <% } %>
+
+      <div class="plantao-modal-footer">
+        <% if (podeEditar) { %>
+          <a class="btn btn-primary" href="/escala/<%= plantao.IDPLANTAO %>/editar">Editar plantão</a>
+        <% } %>
+        <% if (!semAcoes && avaliacao && avaliacao.podeJustificar) { %>
+          <a class="btn btn-warn" href="/justificativa/novo?idPlantao=<%= plantao.IDPLANTAO %>">Justificar</a>
+        <% } %>
+        <button type="button" class="btn" data-plantao-modal-fechar>Fechar</button>
+      </div>
+    </div>
+  </template>
 </article>

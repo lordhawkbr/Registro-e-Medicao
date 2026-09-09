@@ -330,6 +330,18 @@ body.body-admin .container-lista .filtros-card {
   border-color: #d1d5db;
 }
 
+.tag-reprovado {
+  color: #9f1239;
+  background: #ffe4e6;
+  border-color: #fda4af;
+}
+
+.tag-expirado {
+  color: #4b5563;
+  background: #e5e7eb;
+  border-color: #9ca3af;
+}
+
 .relatorio-resumo {
   display: flex;
   flex-wrap: wrap;
@@ -1245,6 +1257,116 @@ body.body-medico .container-medico {
 .plantao-tile {
   padding: 14px;
   margin-bottom: 10px;
+}
+
+.plantao-tile-clicavel {
+  cursor: pointer;
+}
+
+.plantao-tile-clicavel:focus-visible {
+  outline: 2px solid var(--accent, #0f766e);
+  outline-offset: 2px;
+}
+
+.plantao-modal[hidden] {
+  display: none !important;
+}
+
+.plantao-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 12px;
+}
+
+@media (min-width: 640px) {
+  .plantao-modal {
+    align-items: center;
+  }
+}
+
+.plantao-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+}
+
+.plantao-modal-dialog {
+  position: relative;
+  z-index: 1;
+  width: min(520px, 100%);
+  max-height: min(88vh, 720px);
+  overflow: auto;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  box-shadow: var(--shadow);
+}
+
+.plantao-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px 8px;
+  border-bottom: 1px solid var(--line);
+}
+
+.plantao-modal-header h3 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.plantao-modal-content {
+  padding: 14px 16px 18px;
+}
+
+.plantao-modal-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.plantao-modal-grid > div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.plantao-modal-span {
+  grid-column: 1 / -1;
+}
+
+.plantao-modal-subtitle {
+  margin: 14px 0 8px;
+  font-size: 0.92rem;
+}
+
+.plantao-modal-list {
+  margin: 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.plantao-modal-list li {
+  line-height: 1.4;
+}
+
+.plantao-modal-footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+body.modal-aberta {
+  overflow: hidden;
 }
 
 .plantao-tile-top {
