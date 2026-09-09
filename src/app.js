@@ -38,6 +38,8 @@ app.use((req, res, next) => {
     res.locals.adminNav = "justificativas";
   } else if (req.path.startsWith("/relatorio")) {
     res.locals.adminNav = "relatorio";
+  } else if (req.path.startsWith("/escala/calendario")) {
+    res.locals.adminNav = "calendario";
   } else if (req.path.startsWith("/escala")) {
     res.locals.adminNav = "plantoes";
   }
