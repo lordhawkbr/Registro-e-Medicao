@@ -19,4 +19,17 @@ function parseFiltrosEscala(query = {}) {
   };
 }
 
-module.exports = { asArray, parseFiltrosEscala };
+function parseFiltrosCalendario(query = {}) {
+  const mes = String(query.mes || "").trim();
+  const mesValido = /^\d{4}-\d{2}$/.test(mes) ? mes : null;
+  const statusCal = String(query.statusCal || "").trim().toLowerCase();
+  const statusCalValidos = ["realizado", "pendente", "nao_realizado", "cancelado"];
+  return {
+    mes: mesValido,
+    codFilial: query.codFilial ? String(query.codFilial).trim() : "",
+    categoria: query.categoria ? String(query.categoria).trim() : "",
+    statusCal: statusCalValidos.includes(statusCal) ? statusCal : ""
+  };
+}
+
+module.exports = { asArray, parseFiltrosEscala, parseFiltrosCalendario };

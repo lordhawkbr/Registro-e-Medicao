@@ -102,7 +102,12 @@
 
             <div class="form-actions">
               <button type="submit" class="btn btn-primary">Salvar</button>
-              <a href="/escala" class="btn">Cancelar</a>
+              <% if (typeof origem !== 'undefined' && origem === 'calendario') { %>
+                <input type="hidden" name="origem" value="calendario">
+                <a href="/escala/calendario<%= dataVal ? ('?mes=' + dataVal.slice(0, 7)) : '' %>" class="btn">Cancelar</a>
+              <% } else { %>
+                <a href="/escala" class="btn">Cancelar</a>
+              <% } %>
             </div>
           </form>
 </div>

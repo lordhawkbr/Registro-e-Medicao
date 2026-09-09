@@ -192,9 +192,7 @@ async function enriquecerStatusPorMedico(plantoes) {
   });
 }
 
-async function listar(filtros = {}) {
-  const pool = await getPool();
-  const request = pool.request();
+function aplicarFiltrosListagem(request, filtros = {}) {
   let where = "WHERE 1=1";
 
   const dataInicio = filtros.dataInicio || filtros.data || null;
@@ -233,12 +231,32 @@ async function listar(filtros = {}) {
     where += ` AND e.STATUS IN (${parts.join(",")})`;
   }
 
+  return where;
+}
+
+async function listar(filtros = {}) {
+  const pool = await getPool();
+  const request = pool.request();
+  const where = aplicarFiltrosListagem(request, filtros);
+
   const result = await request.query(`
     ${SELECT_PLANTAO_ENRIQUECIDO}
     ${where}
     ORDER BY e.DATA DESC, e.HORAINICIO DESC
   `);
   return enriquecerNomesMedicos(result.recordset.map(normalizarPlantao));
+}
+
+async function contar(filtros = {}) {
+  const pool = await getPool();
+  const request = pool.request();
+  const where = aplicarFiltrosListagem(request, filtros);
+  const result = await request.query(`
+    SELECT COUNT(*) AS TOTAL
+    FROM ESCALAMEDICA e
+    ${where}
+  `);
+  return Number(result.recordset[0]?.TOTAL || 0);
 }
 
 async function buscarPorId(idPlantao) {
@@ -459,6 +477,7 @@ function calcularDataExpiracao(data, horaFim) {
 
 module.exports = {
   listar,
+  contar,
   buscarPorId,
   criar,
   atualizar,
